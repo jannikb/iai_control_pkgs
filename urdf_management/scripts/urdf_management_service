@@ -1,14 +1,6 @@
-#!/bin/bash
-ROS_SBCL_PATH=`rospack find sbcl`
-export ROSLISP_PATH=`rospack find roslisp`
-if [ -z "$ROSLISP_PATH" ]; then
-  echo "roslisp not found"
-  exit 1
-fi
-if [ -n "$ROS_SBCL_PATH" ]; then
-  SBCL=/scripts/run-sbcl.sh
-else
-  SBCL=sbcl
-fi
+#!/usr/bin/env sh
+"true"; exec /usr/bin/env sbcl --noinform --load `rospack find roslisp`/scripts/roslisp-sbcl-init --script "$0" "$@"
 
-ROSLISP_CURRENT_PACKAGE=urdf_management $SBCL --noinform --end-runtime-options --noprint --no-userinit --disable-debugger --load $ROSLISP_PATH/scripts/roslisp-sbcl-init --load scripts/urdf_management_service.lisp --end-toplevel-options $*
+(ros-load:load-system "urdf_management" "urdf-management")
+
+(urdf-management:start-urdf-management)
