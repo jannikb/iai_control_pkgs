@@ -35,7 +35,6 @@
                :iai_urdf_msgs-srv
                :std_msgs-msg
                :urdf-management
-               :cl-robot-models
                :cram-pr2-controllers)
   :components
   ((:module "src"

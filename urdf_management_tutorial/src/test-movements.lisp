@@ -28,13 +28,21 @@
 
 (in-package :urdf-management-tutorial)
 
-(defparameter *l-arm-joint-names* '("l_upper_arm_roll_joint"
-                                    "l_shoulder_pan_joint"
-                                    "l_shoulder_lift_joint"
-                                    "l_forearm_roll_joint"
-                                    "l_elbow_flex_joint"
-                                    "l_wrist_flex_joint"
-                                    "l_wrist_roll_joint"))
+(defparameter *left-arm-joint-names* '(:l_upper_arm_roll_joint
+                                       :l_shoulder_pan_joint 
+                                       :l_shoulder_lift_joint
+                                       :l_forearm_roll_joint
+                                       :l_elbow_flex_joint
+                                       :l_wrist_flex_joint
+                                       :l_wrist_roll_joint))
+
+(defparameter *left-arm-goal-state* '(:l_upper_arm_roll_joint (:position 0.593)
+                                      :l_shoulder_pan_joint (:position 1.265)
+                                      :l_shoulder_lift_joint (:position 1.265)
+                                      :l_forearm_roll_joint (:position 0.524)
+                                      :l_elbow_flex_joint (:position -2.1)
+                                      :l_wrist_flex_joint (:position -0.067)
+                                      :l_wrist_roll_joint (:position 4.419)))
 
 (defun make-joint-state-list (joint-names joint-positions)
   "Takes a list of `joint-names` and a list of `joint-positions`, and
@@ -45,16 +53,11 @@ returns a list joint-states. Input lists need to be of equal length."
 
 (defun move-to-grasp-position ()
   (roslisp:start-ros-node (format nil "urdf_management_tutorial_~a" (gensym)))
-  (let((l-arm-grasping-configuration (cl-robot-models:make-robot-state
-                                      "Raphael" "PR2"
-                                      (make-joint-state-list
-                                       *l-arm-joint-names*
-                                       '(0.593 1.265 0.964 0.524 -2.1 -0.067 4.419))))
-       (pr2-controller (make-pr2-arm-position-controller-handle 
+  (let((pr2-controller (make-pr2-arm-position-controller-handle 
                         "/l_arm_controller/joint_trajectory_action" 
-                        *l-arm-joint-names*)))
+                        *left-arm-joint-names*)))
     (roslisp:ros-info "urdf_management_tutorial" "Waiting for action sever.")
     (actionlib:wait-for-server (cram-pr2-controllers::client pr2-controller))
     (roslisp:ros-info "urdf_management_tutorial" "Moving arm.")
-    (move-arm pr2-controller l-arm-grasping-configuration 4.0))
+    (move-arm pr2-controller *left-arm-goal-state* 4.0))
   (roslisp:shutdown-ros-node))
