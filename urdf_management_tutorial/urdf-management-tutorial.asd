@@ -35,6 +35,7 @@
                :iai_urdf_msgs-srv
                :std_msgs-msg
                :urdf-management
+               :actionlib-lisp
                :cram-pr2-controllers)
   :components
   ((:module "src"

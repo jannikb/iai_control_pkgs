@@ -44,20 +44,13 @@
                                       :l_wrist_flex_joint (:position -0.067)
                                       :l_wrist_roll_joint (:position 4.419)))
 
-(defun make-joint-state-list (joint-names joint-positions)
-  "Takes a list of `joint-names` and a list of `joint-positions`, and
-returns a list joint-states. Input lists need to be of equal length."
-  (mapcar (lambda (name position)
-            (cl-robot-models:make-joint-state :name name :position position))
-          joint-names joint-positions))
-
 (defun move-to-grasp-position ()
   (roslisp:start-ros-node (format nil "urdf_management_tutorial_~a" (gensym)))
   (let((pr2-controller (make-pr2-arm-position-controller-handle 
                         "/l_arm_controller/joint_trajectory_action" 
                         *left-arm-joint-names*)))
     (roslisp:ros-info "urdf_management_tutorial" "Waiting for action sever.")
-    (actionlib:wait-for-server (cram-pr2-controllers::client pr2-controller))
+    (actionlib-lisp:wait-for-server (cram-pr2-controllers::client pr2-controller))
     (roslisp:ros-info "urdf_management_tutorial" "Moving arm.")
     (move-arm pr2-controller *left-arm-goal-state* 4.0))
   (roslisp:shutdown-ros-node))
