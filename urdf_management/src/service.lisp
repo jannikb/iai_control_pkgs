@@ -63,7 +63,8 @@
         (link-descriptions nil)
         (joint-descriptions nil)
         (new-links nil)
-        (new-joints nil))
+        (joint-parents nil)
+        (child-joints nil))
 
     ;; Get the descriptions of the joints and links from the xml
     (dolist (child (s-xml:xml-element-children parsed-xml))
@@ -71,31 +72,59 @@
         (return-from add-to-robot nil))
       (case (s-xml:xml-element-name child)
         (:|link| (push child link-descriptions))
-        (:|joint| (push child joint-descriptions))))
-
+        (:|joint| (push child joint-descriptions))
+        (otherwise         
+         (ros-error (urdf-management) 
+                    "Description contains an illegal element: ~a" child)
+         (return-from add-to-robot nil))))
+ 
+    ;; Check the joint dscriptions and fill child-joints and joint-parents
+    (dolist (joint-desc joint-descriptions)
+      (let ((joint-name (s-xml:xml-element-attribute joint-desc :|name|))
+            (parent-desc (cl-urdf::xml-element-child joint-desc :|parent|))
+            (child-desc (cl-urdf::xml-element-child joint-desc :|child|)))
+        (unless parent-desc
+          (ros-error (urdf-management) "No parent for joint: ~a" joint-desc)
+          (return-from add-to-robot nil))
+        (unless joint-name
+          (ros-error (urdf-management) "No name for joint: ~a" joint-desc)
+          (return-from add-to-robot nil))
+        (let ((joint-parent  (s-xml:xml-element-attribute parent-desc :|link|))
+              (joint-child  (s-xml:xml-element-attribute child-desc :|link|)))
+          (unless joint-parent
+            (ros-error (urdf-management) "No parent name for joint: ~a" joint-desc)
+            (return-from add-to-robot nil))
+          (unless joint-child
+            (ros-error (urdf-management) "No child name for joint: ~a" joint-desc)
+            (return-from add-to-robot nil))
+          (push joint-parent joint-parents)
+          (push (intern joint-name) joint-parents)
+          (push joint-name child-joints)
+          (push (intern joint-child) child-joints))))       
+ 
     ;; Create the links from the description
     (dolist (link-desc link-descriptions)
       (let ((link (create-link link-desc)))
-        (when (not link)
+        (unless link
           (ros-error (urdf-management) "Invalid link description: ~a" link-desc)
           (return-from add-to-robot nil))
         (push link new-links)))
 
     ;; Add the new links to the robot-model
     (dolist (link new-links)
-      (add-link-to-robot link))
-           
-    ;; Create the joints from the description
+      (if (connected-to-robot (name link) child-joints joint-parents (length new-links))
+          (add-link-to-robot link)
+          (progn
+            (ros-error (urdf-management) "No connection between root link and ~a" link)
+            (return-from add-to-robot nil))))
+ 
+    ;; Create the joints from the description and add them to the robot model
     (dolist (joint-desc joint-descriptions)
       (let ((joint (create-joint joint-desc)))
-        (when (not joint)
+        (unless joint
           (ros-error (urdf-management) "Invalid joint description: ~a" joint-desc)
           (return-from add-to-robot nil))
-        (push joint new-joints)))
-    
-    ;; Add the new joints to the robot-model
-    (dolist (joint new-joints)
-      (add-joint-to-robot joint))
+        (add-joint-to-robot joint)))
 
     t))
 
@@ -129,6 +158,17 @@
          names)
     t))
 
+(defun connected-to-robot (link-name child-joints joint-parents num-of-links &optional (depth 0))
+  (when (< depth num-of-links)
+    (let ((from-joint (getf child-joints (intern link-name))))
+      (when from-joint
+        (let ((from-link (getf joint-parents (intern from-joint))))
+          (when from-link
+            (if (gethash from-link (links *robot-model*))
+                t
+                (connected-to-robot from-link child-joints joint-parents 
+                                    num-of-links (1+ depth)))))))))
+  
 (defun publish-urdf ()
-  "Publsihes generates an urdf description from the robot model and publishes it."
+  "Generates an urdf description from the robot model and publishes it."
   (publish-msg *urdf-pub* :data (generate-urdf-string *robot-model*)))
