@@ -44,7 +44,7 @@
                    ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
                     (add-to-robot xml_elements_to_add))
                    ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
-                    (remove-from-robot element_names_to_remove)))))
+                    (remove-from-robot (coerce element_names_to_remove 'list))))))
     (when success (publish-urdf))
     (make-response :success success)))
 
@@ -78,24 +78,24 @@
                     "Description contains an illegal element: ~a" child)
          (return-from add-to-robot nil))))
  
-    ;; Check the joint dscriptions and fill child-joints and joint-parents
+    ;; Check the joint descriptions and fill child-joints and joint-parents
     (dolist (joint-desc joint-descriptions)
       (let ((joint-name (s-xml:xml-element-attribute joint-desc :|name|))
             (parent-desc (cl-urdf::xml-element-child joint-desc :|parent|))
             (child-desc (cl-urdf::xml-element-child joint-desc :|child|)))
         (unless parent-desc
-          (ros-error (urdf-management) "No parent for joint: ~a" joint-desc)
+          (ros-warn (urdf-management) "No parent for joint: ~a" joint-desc)
           (return-from add-to-robot nil))
         (unless joint-name
-          (ros-error (urdf-management) "No name for joint: ~a" joint-desc)
+          (ros-warn (urdf-management) "No name for joint: ~a" joint-desc)
           (return-from add-to-robot nil))
         (let ((joint-parent  (s-xml:xml-element-attribute parent-desc :|link|))
               (joint-child  (s-xml:xml-element-attribute child-desc :|link|)))
           (unless joint-parent
-            (ros-error (urdf-management) "No parent name for joint: ~a" joint-desc)
+            (ros-warn (urdf-management) "No parent name for joint: ~a" joint-desc)
             (return-from add-to-robot nil))
           (unless joint-child
-            (ros-error (urdf-management) "No child name for joint: ~a" joint-desc)
+            (ros-warn (urdf-management) "No child name for joint: ~a" joint-desc)
             (return-from add-to-robot nil))
           (push joint-parent joint-parents)
           (push (intern joint-name) joint-parents)
@@ -106,7 +106,7 @@
     (dolist (link-desc link-descriptions)
       (let ((link (create-link link-desc)))
         (unless link
-          (ros-error (urdf-management) "Invalid link description: ~a" link-desc)
+          (ros-warn (urdf-management) "Invalid link description: ~a" link-desc)
           (return-from add-to-robot nil))
         (push link new-links)))
 
@@ -115,14 +115,14 @@
       (if (connected-to-robot (name link) child-joints joint-parents (length new-links))
           (add-link-to-robot link)
           (progn
-            (ros-error (urdf-management) "No connection between root link and ~a" link)
+            (ros-warn (urdf-management) "No connection between root link and ~a" link)
             (return-from add-to-robot nil))))
  
     ;; Create the joints from the description and add them to the robot model
     (dolist (joint-desc joint-descriptions)
       (let ((joint (create-joint joint-desc)))
         (unless joint
-          (ros-error (urdf-management) "Invalid joint description: ~a" joint-desc)
+          (ros-warn (urdf-management) "Invalid joint description: ~a" joint-desc)
           (return-from add-to-robot nil))
         (add-joint-to-robot joint)))
 
@@ -148,17 +148,42 @@
   (let ((joint-table (joints *robot-model*)))
     (setf (gethash (name joint) joint-table) joint)))
 
-(defun remove-from-robot (names)
+(defun remove-from-robot (link-names)
   "Searches for links and joints with the given names in the robot model and removes them."
-  (let ((link-table (links *robot-model*))
-        (joint-table (joints *robot-model*)))
-    (map 'vector (lambda (name)
-                   (remhash name link-table)
-                   (remhash name joint-table))
-         names)
-    t))
+  (flet ((get-link (name) 
+           (let ((link (gethash name (links *robot-model*))))
+             (unless link
+               (ros-warn (urdf-management) "Link ~a not found." name)
+               (return-from remove-from-robot nil))
+             link)))
+    (let ((unremoved-links (mapcar #'get-link link-names))
+          (still-unremoved-links nil))
+      (loop while unremoved-links
+            do (loop while unremoved-links
+                     do (let ((link (pop unremoved-links)))
+                          (unless (remove-link link)
+                            (push link still-unremoved-links))))
+               (if (equal unremoved-links (reverse still-unremoved-links))
+                   (return-from remove-from-robot nil)
+                   (setf unremoved-links still-unremoved-links)))))
+    t)
+
+(defun remove-link (link)
+  "Removes the `link' from the robot-model. Returns t if successfull."
+  (let* ((link (gethash (name link) (links *robot-model*)))
+         (parent-joint (from-joint link))
+         (parent-link (parent parent-joint)))
+    (unless (to-joints link)
+      (setf (slot-value link 'to-joints) 
+            (remove-if (lambda (to-joint)
+                         (equal (name to-joint) (name parent-joint)))
+                       (to-joints parent-link)))
+      (remhash (name parent-joint) (joints *robot-model*))    
+      (remhash (name link) (links *robot-model*))
+      t)))
 
 (defun connected-to-robot (link-name child-joints joint-parents num-of-links &optional (depth 0))
+  "Checks if a link is connected to a link of the robot-model."
   (when (< depth num-of-links)
     (let ((from-joint (getf child-joints (intern link-name))))
       (when from-joint

@@ -32,10 +32,10 @@
   (alter-urdf 1 "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 0 0\" /><geometry><mesh filename=\"package://urdf_management_tutorial/meshes/kitchen/hand-tools/edeka_spatula1.dae\" /></geometry></visual></link><joint name=\"joint_spatula\" type=\"fixed\"><parent link=\"l_gripper_r_finger_tip_link\" /><child link=\"spatula\" /><origin rpy=\"-1.57 0 0.5\" xyz=\"0.22 0 0\"/></joint>" nil))
 
 (defun remove-spatula ()
-  (alter-urdf 2 "" (vector "joint_spatula" "spatula")))
+  (alter-urdf 2 "" (vector "spatula")))
 
 (defun remove-left-gripper () 
-  (alter-urdf 2 "" (vector "l_gripper_l_finger_link"          ;;links
+  (alter-urdf 2 "" (vector "l_gripper_l_finger_link"        
                            "l_gripper_l_finger_tip_frame"
                            "l_gripper_l_finger_tip_link"
                            "l_gripper_led_frame"
@@ -45,18 +45,7 @@
                            "l_gripper_palm_link"
                            "l_gripper_r_finger_link"
                            "l_gripper_r_finger_tip_link"
-                           "l_gripper_tool_frame"
-                           "l_gripper_l_finger_joint"          ;;joints
-                           "l_gripper_r_finger_joint"
-                           "l_gripper_l_finger_tip_joint"
-                           "l_gripper_r_finger_tip_joint"
-                           "l_gripper_palm_joint"
-                           "l_gripper_led_joint"
-                           "l_gripper_motor_accelerometer_joint"
-                           "l_gripper_tool_joint"
-                           "l_gripper_motor_slider_joint"
-                           "l_gripper_motor_screw_joint"
-                           "l_gripper_joint")))
+                           "l_gripper_tool_frame")))
 
 (defun alter-urdf (action-id add remove)
   (with-ros-node ("urdf_management_tutorial")
