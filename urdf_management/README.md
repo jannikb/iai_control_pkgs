@@ -6,7 +6,6 @@ Uses the robot_descritpion from the parameter server as initial description and 
 
 ## Start
 With a running roscore type in a new terminal:
-  * ```roscd urdf_management```
   * ```rosrun urdf_management urdf_management_service```
 
 ## Usage
