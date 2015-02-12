@@ -6,17 +6,13 @@
 Checkout the following repos into your workspace:
   * https://github.com/code-iai/iai_control_pkgs
   * https://github.com/code-iai/iai_common_msgs
-  * https://github.com/cram-code/cram_physics
-  * https://github.com/cram-code/cram_highlevel
+  * https://github.com/ros/roslisp_common (only until a version with cl_urdf gets released)
 
 Additional repos required only for this tutorial:
   * https://github.com/cram-code/cram_bridge.git
-  * https://github.com/cram-code/cl_robotics_libs
   * https://github.com/code-iai/iai_robots
 
-Note, some of these repos are still on rosbuild.
-
-Build all the catkin packages by running ```catkin_make```
+Build all packages by running ```catkin_make```.
 
 
 ## Start-up
@@ -27,7 +23,7 @@ Start controller for the joints and set the robot_description parameter to the p
   * ```roslaunch loopback_controller_manager_examples pr2_all_controllers_simulation_dynamic_state.launch```
 
 Start the urdf management service in a new terminal:
-  * ```rosrun urdf_management urdf_management_service```
+  * ```rosrun urdf_management urdf_management_service.lisp```
 
 Start rviz in a new terminal:
   * ```rosrun rviz rviz```
@@ -62,5 +58,3 @@ You can also remove parts of the initial robot description. To remove the left g
  * ```rosrun urdf_management_tutorial remove_left_gripper.lisp```
 
 ![rviz view](doc/pr2_no_left_gripper.png)
-
-Note that the parsing of the urdf will fail when you remove the gripper but still had the spatula attached.
