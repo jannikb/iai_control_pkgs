@@ -112,11 +112,10 @@
 
     ;; Add the new links to the robot-model
     (dolist (link new-links)
-      (if (connected-to-robot (name link) child-joints joint-parents (length new-links))
-          (add-link-to-robot link)
-          (progn
-            (ros-warn (urdf-management) "No connection between root link and ~a" link)
-            (return-from add-to-robot nil))))
+      (unless (connected-to-robot (name link) child-joints joint-parents (length new-links))
+        (ros-warn (urdf-management) "No connection between root link and ~a" (name link))
+        (return-from add-to-robot nil))
+      (add-link-to-robot link))
  
     ;; Create the joints from the description and add them to the robot model
     (dolist (joint-desc joint-descriptions)
@@ -155,17 +154,32 @@
              (unless link
                (ros-warn (urdf-management) "Link ~a not found." name)
                (return-from remove-from-robot nil))
-             link)))
-    (let ((unremoved-links (mapcar #'get-link link-names))
-          (still-unremoved-links nil))
-      (loop while unremoved-links
-            do (loop while unremoved-links
-                     do (let ((link (pop unremoved-links)))
-                          (unless (remove-link link)
-                            (push link still-unremoved-links))))
-               (if (equal unremoved-links (reverse still-unremoved-links))
-                   (return-from remove-from-robot nil)
-                   (setf unremoved-links still-unremoved-links)))))
+             link))
+         (find-link (link links) (find (name link) links :key #'name)))
+    (let ((unremovable-links (mapcar #'get-link link-names))
+          (still-unremovable-links nil)
+          (removable-links nil))
+      (loop while unremovable-links
+            do (dolist (link unremovable-links)
+                 (let ((to-joints (to-joints link)))
+                   (if (or (not to-joints)
+                           (reduce (lambda (a b) (and a b))
+                                   (mapcar (lambda (joint)
+                                             (find-link (child joint) removable-links))
+                                           to-joints)))
+                       (push link removable-links)
+                       (push link still-unremovable-links))))
+               (if (and still-unremovable-links
+                        (equal unremovable-links (reverse still-unremovable-links)))
+                   (progn
+                     (ros-warn (urdf-management) "Cannot remove links ~a" 
+                                                (mapcar #'name still-unremovable-links))
+                     (return-from remove-from-robot nil))
+                   (progn 
+                     (setf unremovable-links still-unremovable-links)
+                     (setf still-unremovable-links nil))))
+      (dolist (link (reverse removable-links))
+        (remove-link link))))
     t)
 
 (defun remove-link (link)
@@ -174,7 +188,7 @@
          (parent-joint (from-joint link))
          (parent-link (parent parent-joint)))
     (unless (to-joints link)
-      (setf (slot-value link 'to-joints) 
+      (setf (slot-value parent-link 'to-joints) 
             (remove-if (lambda (to-joint)
                          (equal (name to-joint) (name parent-joint)))
                        (to-joints parent-link)))
