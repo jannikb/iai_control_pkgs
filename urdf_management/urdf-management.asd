@@ -13,7 +13,8 @@
   ((:module "src"
     :components
     ((:file "package")
-     (:file "add" :depends-on ("package"))
-     (:file "remove" :depends-on ("package"))
      (:file "update" :depends-on ("package"))
-     (:file "service" :depends-on ("package" "add" "remove" "update"))))))
+     (:file "add" :depends-on ("package" "update"))
+     (:file "remove" :depends-on ("package"))
+     (:file "service" :depends-on ("package" "add" "remove"))
+     (:file "parameter-service" :depends-on ("package"))))))

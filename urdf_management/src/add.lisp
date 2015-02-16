@@ -79,7 +79,7 @@
       (let* ((link-name (s-xml:xml-element-attribute link-desc :|name|))
              (old-link (gethash link-name (links robot))))
         (when old-link
-          (push (update-link old-link link-desc) new-links))
+          (push (update-link old-link link-desc robot) new-links))
         (unless old-link
           (let ((link (create-link link-desc robot)))
             (unless link
@@ -99,7 +99,7 @@
       (let* ((joint-name (s-xml:xml-element-attribute joint-desc :|name|))
              (old-joint (gethash joint-name (joints robot))))
         (when old-joint
-          (setf (gethash joint-name (joints robot)) (update-joint old-joint joint-desc)))
+          (setf (gethash joint-name (joints robot)) (update-joint old-joint joint-desc robot)))
         (unless old-joint
           (let ((joint (create-joint joint-desc robot)))
             (unless joint
