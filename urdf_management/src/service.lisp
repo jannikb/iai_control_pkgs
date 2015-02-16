@@ -104,26 +104,36 @@
  
     ;; Create the links from the description
     (dolist (link-desc link-descriptions)
-      (let ((link (create-link link-desc)))
-        (unless link
-          (ros-warn (urdf-management) "Invalid link description: ~a" link-desc)
-          (return-from add-to-robot nil))
-        (push link new-links)))
+      (let* ((link-name (s-xml:xml-element-attribute link-desc :|name|))
+             (old-link (gethash link-name (links *robot-model*))))
+        (when old-link
+          (push (update-link old-link link-desc) new-links))
+        (unless old-link
+          (let ((link (create-link link-desc)))
+            (unless link
+              (ros-warn (urdf-management) "Invalid link description: ~a" link-desc)
+              (return-from add-to-robot nil))
+            (push link new-links)))))
 
     ;; Add the new links to the robot-model
     (dolist (link new-links)
       (unless (connected-to-robot (name link) child-joints joint-parents (length new-links))
         (ros-warn (urdf-management) "No connection between root link and ~a" (name link))
         (return-from add-to-robot nil))
-      (add-link-to-robot link))
+      (setf (gethash (name link) (links *robot-model*)) link))
  
     ;; Create the joints from the description and add them to the robot model
     (dolist (joint-desc joint-descriptions)
-      (let ((joint (create-joint joint-desc)))
-        (unless joint
-          (ros-warn (urdf-management) "Invalid joint description: ~a" joint-desc)
-          (return-from add-to-robot nil))
-        (add-joint-to-robot joint)))
+      (let* ((joint-name (s-xml:xml-element-attribute joint-desc :|name|))
+             (old-joint (gethash joint-name (joints *robot-model*))))
+        (when old-joint
+          (setf (gethash joint-name (joints *robot-model*)) (update-joint old-joint joint-desc)))
+        (unless old-joint
+          (let ((joint (create-joint joint-desc)))
+            (unless joint
+              (ros-warn (urdf-management) "Invalid joint description: ~a" joint-desc)
+              (return-from add-to-robot nil))
+            (setf (gethash (name joint) (joints *robot-model*)) joint)))))
 
     t))
 
@@ -132,20 +142,99 @@
   (let ((link (cl-urdf::parse-xml-node :|link| link-desc *robot-model*)))
     link))
 
-(defun add-link-to-robot (link)
-  "Adds the `link' to the robot model."
-  (let ((link-table (links *robot-model*)))
-    (setf (gethash (name link) link-table) link)))
+(defun update-link (link link-desc)
+  (make-instance 'link
+                 :name (name link)
+                 :inertial (update-inertial (inertial link) 
+                                            (cl-urdf::xml-element-child link-desc :|inertial|))
+                 :visual (update-visual (visual link)
+                                        (cl-urdf::xml-element-child link-desc :|visual|))
+                 :collision (update-collision (collision link)
+                                             (cl-urdf::xml-element-child link-desc :|collision|))))
+
+(defun update-inertial (inertial inertial-desc)
+  (unless inertial-desc
+    (return-from update-inertial inertial))
+  (unless inertial
+    (return-from update-inertial (cl-urdf::parse-xml-node :|inertial| inertial-desc *robot-model*)))
+  (let ((mass-node (cl-urdf::xml-element-child inertial-desc :|mass|))
+        (origin-node (cl-urdf::xml-element-child inertial-desc :|origin|)))
+    (make-instance 'inertial
+                   :origin (if origin-node
+                               (cl-urdf::parse-xml-node :|origin| origin-node)
+                               (origin inertial))
+                   :mass (if mass-node
+                             (cl-urdf::parse-xml-node :|mass| mass-node)
+                             (mass inertial)))))
+
+(defun update-visual (visual visual-desc)
+  (unless visual-desc
+    (return-from update-visual visual))
+  (unless visual 
+    (return-from update-visual (cl-urdf::parse-xml-node :|visual| visual-desc *robot-model*)))
+  (let ((origin-node (cl-urdf::xml-element-child visual-desc :|origin|))
+        (material-node (cl-urdf::xml-element-child visual-desc :|material|))
+        (geometry-node (cl-urdf::xml-element-child visual-desc :|geometry|)))
+    (make-instance 'visual 
+                   :origin (if origin-node
+                               (cl-urdf::parse-xml-node :|origin| origin-node)
+                               (origin visual))
+                   :material (if material-node 
+                                 (cl-urdf::parse-xml-node :|material| material-node)
+                                 (material visual))
+                   :geometry (if geometry-node
+                                 (cl-urdf::parse-xml-node :|geometry| geometry-node)
+                                 (geometry visual)))))
+
+(defun update-collision (collision collision-desc)
+  (unless collision-desc
+    (return-from update-collision collision))
+  (unless collision
+    (return-from update-collision (cl-urdf::parse-xml-node :|collision| collision-desc *robot-model*)))
+  (let ((origin-node (cl-urdf::xml-element-child collision-desc :|origin|))
+        (geometry-node (cl-urdf::xml-element-child collision-desc :|geometry|)))
+    (make-instance 'collision
+                   :origin (if origin-node
+                               (cl-urdf::parse-xml-node :|origin| origin-node)
+                               (origin collision))
+                   :geometry (if geometry-node
+                                 (cl-urdf::parse-xml-node :|geometry| geometry-node)
+                                 (geometry collision)))))
+
+(defun update-joint (joint joint-desc)
+  (let ((type (s-xml:xml-element-attribute joint-desc :|type|))
+        (axis-node (cl-urdf::xml-element-child joint-desc :|axis|))
+        (origin-node (cl-urdf::xml-element-child joint-desc :|origin|))
+        (limits-node (cl-urdf::xml-element-child joint-desc :|limit|))
+        (parent-node (cl-urdf::xml-element-child joint-desc :|parent|))
+        (child-node (cl-urdf::xml-element-child joint-desc :|child|)))
+    (let ((parent-name (when parent-node (cl-urdf::parse-xml-node :|parent| parent-node)))
+          (child-name (when child-node (cl-urdf::parse-xml-node :|child| child-node))))
+      (make-instance 'joint
+                     :name (name joint)
+                     :type (if type
+                               type
+                               (joint-type joint))
+                     :axis (if axis-node
+                               (cl-urdf::parse-xml-node axis-node :|axis|)
+                               (axis joint))
+                     :origin (if origin-node
+                                 (cl-urdf::parse-xml-node origin-node :|origin|)
+                                 (origin joint))
+                     :limits (if limits-node
+                                (cl-urdf::parse-xml-node limits-node :|limit|)
+                                (when (slot-boundp joint 'limits) (limits joint)))
+                     :parent (if parent-name
+                                 (gethash parent-name (links *robot-model*))
+                                 (parent joint))
+                     :child (if child-name
+                                (gethash child-name (links *robot-model*))
+                                (child joint))))))
 
 (defun create-joint (joint-desc)
   "Parses the xml description of the joint. If it's a valid joint the joint is returned else nil."
   (let ((joint (cl-urdf::parse-xml-node :|joint| joint-desc *robot-model*)))
-    joint))
-
-(defun add-joint-to-robot (joint)
-  "Adds the `joint' to the robot model."
-  (let ((joint-table (joints *robot-model*)))
-    (setf (gethash (name joint) joint-table) joint)))
+    joint))    
 
 (defun remove-from-robot (link-names)
   "Searches for links and joints with the given names in the robot model and removes them."
