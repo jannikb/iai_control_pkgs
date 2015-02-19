@@ -12,7 +12,7 @@ With a running roscore type in a new terminal:
 ### Usage 
 The service takes 3 arguments ```action```, ```xml_elements_to_add``` and ```element_names_to_remove```.
   * ```action```: ```ADD``` to add the ```xml_elements_to_add``` to the robot description, ```REMOVE``` to remove the ```element_names_to_remove``` from the robot description
-  * ```xml_elements_to_add```: urdf like xml description of the links and joints to add to the robot description. If a link or joint already exists in the current robot model the existing element will be overwritten by the new one.
+  * ```xml_elements_to_add```: urdf like xml description of the links and joints to add to the robot description. If a link or joint already exists in the current robot model the properties of the new link or joint will overwrite the old ones. Properties that are not specified in the new description will remain unchanged.
   * ```element_names_to_remove```: list of names of links that should be removed from the robot description. The links cannot have any children or they have to also be in the list. The joint that connects the link with its parent will also be removed.
 
 ### Examples
@@ -27,6 +27,10 @@ rosservice call /alter_urdf 2 "" '["new_link"]'
 ```
 
 ## SimpleAlterUrdf
+
+### Start
+With a running roscore type in a new terminal:
+  * ```rosrun urdf_management simple_alter_urdf_service.lisp```
 
 ### Usage
 The SimpleAlterUrdf service takes the arguments ```action``` and ```parameter``` where ```action``` is the same as for the AlterUrdf service. ```parameter``` is the name of a parameter on the ros parameter service in the namespace ```urdf_management```. The parameter should contain a xml description of the links and joints which you want to modify like ```xml_elements_to_add``` for the AlterUrdf service.
