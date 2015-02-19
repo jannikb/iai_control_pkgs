@@ -29,7 +29,7 @@ rosservice call /alter_urdf 2 "" '["new_link"]'
 ## SimpleAlterUrdf
 
 ### Usage
-The SimpleAlterUrdf service takes the arguments ```action``` and ```parameter``` where ```action``` is the same as for the AlterUrdf service. ```parameter``` is the name of a parameter on the ros parameter service in the namespace ```urdf_management```. The parameter should contain a xml description of the links and joints you which to modify like ```xml_elements_to_add``` for the AlterUrdf service.
+The SimpleAlterUrdf service takes the arguments ```action``` and ```parameter``` where ```action``` is the same as for the AlterUrdf service. ```parameter``` is the name of a parameter on the ros parameter service in the namespace ```urdf_management```. The parameter should contain a xml description of the links and joints which you want to modify like ```xml_elements_to_add``` for the AlterUrdf service.
 
 ### Example
 Add a link and a joint:
