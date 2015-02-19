@@ -30,23 +30,24 @@
 
 (def-service-callback SimpleAlterUrdf (action parameter)
   (ros-info (urdf-management) "Altering robot description.")
-  (when (eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
-    (let ((description (get-param (concatenate 'string "urdf_management/" parameter))))
-      (unless description
-        ;; error msg
-        (make-response :success nil))
-      (when description
+  (cond
+    ((eql action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :add))
+     (let ((description (get-param (concatenate 'string "urdf_management/" parameter) nil)))
+       (unless description
+         (ros-error (urdf-management) "~a not found on parameter server." parameter)
+         (make-response :success nil))
+       (when description
          (make-response :success (add-description description)))))
-  (when (eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
-    (let* ((description (get-param (concatenate 'string "urdf_management/" parameter)))
-           (names (when description (get-element-names description))))
-      (unless names
-        ;; error msg
-        (make-response :success nil))
-      (when names
-        (make-response :success (remove-names names)))))
-  ;; error msg
-  (make-response :success nil))
+    ((eql action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :remove))
+     (let ((description (get-param (concatenate 'string "urdf_management/" parameter) nil)))
+       (unless description
+         (ros-error (urdf-management) "~a not found on parameter server." parameter)
+         (make-response :success nil))
+       (when description
+         (let ((names (when description (get-element-names description))))
+           (make-response :success (remove-names names))))))
+    (t (ros-error (urdf-management) "Action ~a undefined." action)
+       (make-response :success nil))))
 
 (defun simple-alter-urdf-service ()
   "Registers the service to alter the robot description."
@@ -55,12 +56,12 @@
 
 (defun add-description (description)
   (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
-                :action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add)
+                :action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :add)
                 :xml_elements_to_add description))
     
 (defun remove-names (names)
   (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
-                :action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove)
+                :action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :remove)
                 :element_names_to_remove names))
 
 (defun get-element-names (description)
