@@ -61,8 +61,8 @@
         (unless joint-name
           (ros-warn (urdf-management) "No name for joint: ~a" joint-desc)
           (return-from add-to-robot nil))
-        (let ((joint-parent  (s-xml:xml-element-attribute parent-desc :|link|))
-              (joint-child  (s-xml:xml-element-attribute child-desc :|link|)))
+        (let ((joint-parent (s-xml:xml-element-attribute parent-desc :|link|))
+              (joint-child (s-xml:xml-element-attribute child-desc :|link|)))
           (unless joint-parent
             (ros-warn (urdf-management) "No parent name for joint: ~a" joint-desc)
             (return-from add-to-robot nil))
@@ -72,7 +72,7 @@
           (push joint-parent joint-parents)
           (push (intern joint-name) joint-parents)
           (push joint-name child-joints)
-          (push (intern joint-child) child-joints))))       
+          (push (intern joint-child) child-joints))))  
  
     ;; Create the links from the description
     (dolist (link-desc link-descriptions)
@@ -121,12 +121,12 @@
 
 (defun connected-to-robot (link-name child-joints joint-parents num-of-links robot &optional (depth 0))
   "Checks if a link is connected to a link of the robot-model."
-  (when (< depth num-of-links)
-    (let ((from-joint (getf child-joints (intern link-name))))
-      (when from-joint
-        (let ((from-link (getf joint-parents (intern from-joint))))
-          (when from-link
-            (if (gethash from-link (links robot))
-                t
-                (connected-to-robot from-link child-joints joint-parents 
-                                    num-of-links (1+ depth)))))))))
+   (if (gethash link-name (links robot))
+       t
+       (when (< depth num-of-links)
+         (let ((from-joint (getf child-joints (intern link-name))))
+           (when from-joint
+             (let ((from-link (getf joint-parents (intern from-joint))))
+               (when from-link
+                 (connected-to-robot from-link child-joints joint-parents 
+                                     num-of-links (1+ depth)))))))))

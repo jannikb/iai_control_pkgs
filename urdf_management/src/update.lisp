@@ -105,13 +105,13 @@
                                type
                                (joint-type joint))
                      :axis (if axis-node
-                               (cl-urdf::parse-xml-node axis-node :|axis|)
+                               (cl-urdf::parse-xml-node :|axis| axis-node)
                                (axis joint))
                      :origin (if origin-node
-                                 (cl-urdf::parse-xml-node origin-node :|origin|)
+                                 (cl-urdf::parse-xml-node :|origin| origin-node)
                                  (origin joint))
                      :limits (if limits-node
-                                (cl-urdf::parse-xml-node limits-node :|limit|)
+                                (cl-urdf::parse-xml-node :|limit| limits-node)
                                 (when (slot-boundp joint 'limits) (limits joint)))
                      :parent (if parent-name
                                  (gethash parent-name (links robot))

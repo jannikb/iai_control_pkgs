@@ -28,24 +28,28 @@
 
 (in-package :urdf-management)
 
+(defun start-simple-service ()
+  (with-ros-node ("urdf_management" :spin t)
+    (simple-alter-urdf-service)))
+
 (def-service-callback SimpleAlterUrdf (action parameter)
   (ros-info (urdf-management) "Altering robot description.")
   (cond
     ((eql action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :add))
      (let ((description (get-param (concatenate 'string "urdf_management/" parameter) nil)))
-       (unless description
-         (ros-error (urdf-management) "~a not found on parameter server." parameter)
-         (make-response :success nil))
-       (when description
-         (make-response :success (add-description description)))))
+       (if description
+           (make-response :success (add-description description))
+           (progn
+             (ros-error (urdf-management) "~a not found on parameter server." parameter)
+             (make-response :success nil)))))
     ((eql action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :remove))
      (let ((description (get-param (concatenate 'string "urdf_management/" parameter) nil)))
-       (unless description
-         (ros-error (urdf-management) "~a not found on parameter server." parameter)
-         (make-response :success nil))
-       (when description
-         (let ((names (when description (get-element-names description))))
-           (make-response :success (remove-names names))))))
+       (if description
+           (let ((names (when description (get-element-names description))))
+             (make-response :success (remove-names names)))
+           (progn    
+             (ros-error (urdf-management) "~a not found on parameter server." parameter)
+             (make-response :success nil)))))
     (t (ros-error (urdf-management) "Action ~a undefined." action)
        (make-response :success nil))))
 
@@ -55,21 +59,25 @@
   (ros-info (urdf-management) "Ready to alter urdf."))
 
 (defun add-description (description)
-  (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
-                :action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :add)
-                :xml_elements_to_add description))
+  (let ((response (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
+                               :action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :add)
+                               :xml_elements_to_add description)))
+    (unless (success response)
+      (ros-warn (urdf-management) "AlterUrdf service didn't succeed."))
+    (success response)))
     
 (defun remove-names (names)
-  (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
-                :action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :remove)
-                :element_names_to_remove names))
+  (let ((response (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
+                                :action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :remove)
+                                :element_names_to_remove names)))
+    (unless (success response)
+      (ros-warn (urdf-management) "AlterUrdf service didn't succeed."))
+    (success response)))
 
 (defun get-element-names (description)
   (let ((parsed-xml (s-xml:parse-xml-string (format nil "<container>~a</container>" 
                                                     description)
                                             :output-type :xml-struct)))
-    (mapcar (lambda (child)
-              (let ((child-type (s-xml:xml-element-name child)))
-                (when (or (eql child-type :|link|) (eql child-type :|joint|))
-                  (s-xml:xml-element-attribute child :|name|))))
-            (s-xml:xml-element-children parsed-xml))))
+    (mapcar (lambda (child) (s-xml:xml-element-attribute child :|name|))
+            (remove-if-not (lambda (child) (eql (s-xml:xml-element-name child) :|link|))
+                           (s-xml:xml-element-children parsed-xml)))))

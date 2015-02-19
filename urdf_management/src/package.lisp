@@ -34,4 +34,5 @@
         #:cl-urdf
         #:iai_urdf_msgs-srv)
   (:export alter-urdf-service
-           start-urdf-management))
+           start-urdf-management
+           start-simple-service))
