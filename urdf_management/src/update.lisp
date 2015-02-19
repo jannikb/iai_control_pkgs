@@ -39,7 +39,9 @@
                                         robot)
                  :collision (update-collision (collision link)
                                               (cl-urdf::xml-element-child link-desc :|collision|)
-                                              robot)))
+                                              robot)
+                 :from-joint (from-joint link)
+                 :joints (to-joints link)))
 
 (defun update-inertial (inertial inertial-desc robot)
   (unless inertial-desc
