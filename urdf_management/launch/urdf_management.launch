@@ -1,0 +1,8 @@
+<launch>
+
+  <node name="alter_urdf" pkg="urdf_management" type="alter_urdf.lisp" output="screen" args="" />
+
+  <node name="simple_alter_urdf_service" pkg="urdf_management" type="simple_alter_urdf_service.lisp" output="screen" args="" />
+
+</launch>
+  

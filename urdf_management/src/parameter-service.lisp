@@ -33,48 +33,57 @@
     (simple-alter-urdf-service)))
 
 (def-service-callback SimpleAlterUrdf (action parameter)
-  (ros-info (urdf-management) "Altering robot description.")
+  "Callback for the 'simple_alter_urdf' service."
+  (ros-info (urdf-management simple-service) "Altering robot description.")
   (cond
     ((eql action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :add))
      (let ((description (get-param (concatenate 'string "urdf_management/" parameter) nil)))
        (if description
            (make-response :success (add-description description))
            (progn
-             (ros-error (urdf-management) "~a not found on parameter server." parameter)
+             (ros-error (urdf-management simple-service) "~a not found on parameter server." parameter)
              (make-response :success nil)))))
     ((eql action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :remove))
      (let ((description (get-param (concatenate 'string "urdf_management/" parameter) nil)))
        (if description
-           (let ((names (when description (get-element-names description))))
-             (make-response :success (remove-names names)))
+           (let ((links (when description (get-link-names description))))
+             (make-response :success (remove-links links)))
            (progn    
-             (ros-error (urdf-management) "~a not found on parameter server." parameter)
+             (ros-error (urdf-management simple-service) "~a not found on parameter server." parameter)
              (make-response :success nil)))))
-    (t (ros-error (urdf-management) "Action ~a undefined." action)
+    (t (ros-error (urdf-management simple-service) "Action ~a undefined." action)
        (make-response :success nil))))
 
 (defun simple-alter-urdf-service ()
-  "Registers the service to alter the robot description."
+  "Registers the service."
   (register-service "simple_alter_urdf" 'SimpleAlterUrdf)
-  (ros-info (urdf-management) "Ready to alter urdf."))
+  (ros-info (urdf-management simple-service) "Ready to alter urdf."))
 
 (defun add-description (description)
-  (let ((response (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
-                               :action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :add)
-                               :xml_elements_to_add description)))
-    (unless (success response)
-      (ros-warn (urdf-management) "AlterUrdf service didn't succeed."))
-    (success response)))
+  "Calls the AlterUrdf service to add `description' to the robot description."
+  (call-alter-urdf (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add)
+                   description nil))
     
-(defun remove-names (names)
-  (let ((response (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
-                                :action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :remove)
-                                :element_names_to_remove names)))
-    (unless (success response)
-      (ros-warn (urdf-management) "AlterUrdf service didn't succeed."))
-    (success response)))
+(defun remove-links (links)
+  "Calls the AlterUrdf service to remove `links' from the robot description."
+  (call-alter-urdf (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove)
+                   "" links))
 
-(defun get-element-names (description)
+(defun call-alter-urdf (action add remove &optional (timeout 5))
+  "Calls the service alter_urdf with `action', `add' and `remove' as parameters."
+  (let ((found-service (wait-for-service "alter_urdf" timeout)))
+   (if found-service
+       (let ((response (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
+                               :action action
+                               :xml_elements_to_add add
+                               :element_names_to_remove remove)))
+         (unless (success response)
+           (ros-warn (urdf-management simple-service) "AlterUrdf service didn't succeed."))
+         (success response))
+       (ros-error (urdf-management simple-service) "No service 'alter_urdf' found."))))
+     
+(defun get-link-names (description)
+  "Gets a xml descritpion of robot parts and returns the names of the links."
   (let ((parsed-xml (s-xml:parse-xml-string (format nil "<container>~a</container>" 
                                                     description)
                                             :output-type :xml-struct)))
