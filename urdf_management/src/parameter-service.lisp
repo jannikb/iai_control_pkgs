@@ -80,7 +80,9 @@
          (unless (success response)
            (ros-warn (urdf-management simple-service) "AlterUrdf service didn't succeed."))
          (success response))
-       (ros-error (urdf-management simple-service) "No service 'alter_urdf' found."))))
+       (progn
+         (ros-error (urdf-management simple-service) "No service 'alter_urdf' found.")
+         nil))))
      
 (defun get-link-names (description)
   "Gets a xml descritpion of robot parts and returns the names of the links."
