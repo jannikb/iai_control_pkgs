@@ -29,8 +29,11 @@ rosservice call /alter_urdf 2 "" '["new_link"]'
 ## SimpleAlterUrdf
 
 ### Start
-With a running roscore type in a new terminal:
+With the AlterUrdf service running type:
   * ```rosrun urdf_management simple_alter_urdf_service.lisp```
+  
+Without the AlterUrdf service running type:
+  * ```roslaunch urdf_management urdf_management.launch```
 
 ### Usage
 The SimpleAlterUrdf service takes the arguments ```action``` and ```parameter``` where ```action``` is the same as for the AlterUrdf service. ```parameter``` is the name of a parameter on the ros parameter service in the namespace ```urdf_management```. The parameter should contain a xml description of the links and joints which you want to modify like ```xml_elements_to_add``` for the AlterUrdf service.
