@@ -19,11 +19,11 @@ Build all packages by running ```catkin_make```.
 Start a roscore in a new terminal:
   * ```roscore```
 
-Start controller for the joints and set the robot_description parameter to the pr2.urdf in a new terminal:
+Start controller for the joints and set the ```/robot_description``` parameter to the pr2.urdf in a new terminal:
   * ```roslaunch loopback_controller_manager_examples pr2_all_controllers_simulation_dynamic_state.launch```
 
 Start the urdf management service in a new terminal:
-  * ```rosrun urdf_management urdf_management_service.lisp```
+  * ```roslaunch urdf_management urdf_management.launch```
 
 Start rviz in a new terminal:
   * ```rosrun rviz rviz```
@@ -46,6 +46,14 @@ In rviz you should now be able to see a spatula in the left gripper of the PR2.
 ![rviz view](doc/pr2_with_spatula.png)
 ![rviz view](doc/pr2_spatula_tf.png)
 
+We can now modify the properties of the spatula link and joint. To move the visual of the link upwards type:
+* ```rosrun urdf_management_tutorial move_spatula.lisp```
+
+![rviz view](doc/pr2_with_moved_spatula.png) 
+
+To get the spatula back to its initial position we can simply add it again:
+* ```rosrun urdf_management_tutorial add_spatula.lisp```
+
 The spatula is now part of the robot description and connected to the left gripper via a fixed joint. To see the arm moving with the spatula in the gripper type:
   * ```rosrun urdf_management_tutorial move_arm.lisp```
 
@@ -58,3 +66,14 @@ You can also remove parts of the initial robot description. To remove the left g
  * ```rosrun urdf_management_tutorial remove_left_gripper.lisp```
 
 ![rviz view](doc/pr2_no_left_gripper.png)
+
+## Using the simple interface
+
+Add the description of the spatula to the parameter server:
+* ```rosparam set /urdf_management/spatula "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 0 0\" /><geometry><mesh filename=\"package://urdf_management_tutorial/meshes/kitchen/hand-tools/edeka_spatula1.dae\" /></geometry></visual></link><joint name=\"joint_spatula\" type=\"fixed\"><parent link=\"l_gripper_r_finger_tip_link\" /><child link=\"spatula\" /><origin rpy=\"-1.57 0 0.5\" xyz=\"0.22 0 0\"/></joint>"``` 
+
+Add the spatula to the robot description:
+* ```rosservice call /simple_alter_urdf 1 "spatula"```
+
+Remove the spatula from the robot description:
+* ```rosservice call /simple_alter_urdf 2 "spatula"```
