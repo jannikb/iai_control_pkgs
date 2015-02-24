@@ -6,6 +6,7 @@ Uses the robot_descritpion from the parameter server as initial description and 
 ## AlterUrdf
 
 ### Start
+Set ```/robot_description``` on the parameter service to the description of your robot.
 With a running roscore type in a new terminal:
   * ```rosrun urdf_management urdf_management_service.lisp```
 
@@ -18,7 +19,7 @@ The service takes 3 arguments ```action```, ```xml_elements_to_add``` and ```ele
 ### Examples
 Add a link and a joint:
 ```
-rosservice call /alter_urdf 1 "<link name=\"new_link\"/> <joint name=\"new_joint\" type=\"fixed\"><parent link=\"root_link\"/><child link=\"new_link\"/></joint>" '[]'
+rosservice call /alter_urdf 1 "<link name=\"new_link\"/> <joint name=\"new_joint\" type=\"fixed\"><parent link=\"base_link\"/><child link=\"new_link\"/></joint>" '[]'
 ```
 
 Remove a link and the joint that connects it to the robot:
@@ -41,7 +42,7 @@ The SimpleAlterUrdf service takes the arguments ```action``` and ```parameter```
 ### Example
 Add a link and a joint:
 ```
-rosparam set urdf_management/new_link_and_joint "<link name=\"new_link\"/> <joint name=\"new_joint\" type=\"fixed\"><parent link=\"root_link\"/><child link=\"new_link\"/></joint>"
+rosparam set urdf_management/new_link_and_joint "<link name=\"new_link\"/> <joint name=\"new_joint\" type=\"fixed\"><parent link=\"base_link\"/><child link=\"new_link\"/></joint>"
 rosservice call /alter_urdf 1 new_link_and_joint
 ```
 
