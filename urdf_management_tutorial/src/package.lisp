@@ -36,4 +36,6 @@
   (:export add-spatula
            remove-spatula
            remove-left-gripper
-           move-to-grasp-position))
+           move-to-grasp-position
+           move-spatula
+           add-spatula-to-parameter))

@@ -28,8 +28,10 @@
 
 (in-package :urdf-management-tutorial)
 
+(defparameter *spatula* "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 0 0\" /><geometry><mesh filename=\"package://urdf_management_tutorial/meshes/kitchen/hand-tools/edeka_spatula1.dae\" /></geometry></visual></link><joint name=\"joint_spatula\" type=\"fixed\"><parent link=\"l_gripper_r_finger_tip_link\" /><child link=\"spatula\" /><origin rpy=\"-1.57 0 0.5\" xyz=\"0.22 0 0\"/></joint>")
+
 (defun add-spatula ()
-  (alter-urdf 1 "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 0 0\" /><geometry><mesh filename=\"package://urdf_management_tutorial/meshes/kitchen/hand-tools/edeka_spatula1.dae\" /></geometry></visual></link><joint name=\"joint_spatula\" type=\"fixed\"><parent link=\"l_gripper_r_finger_tip_link\" /><child link=\"spatula\" /><origin rpy=\"-1.57 0 0.5\" xyz=\"0.22 0 0\"/></joint>" nil))
+  (alter-urdf 1 *spatula* nil))
 
 (defun remove-spatula ()
   (alter-urdf 2 "" (vector "spatula")))
@@ -47,12 +49,20 @@
                            "l_gripper_r_finger_tip_link"
                            "l_gripper_tool_frame")))
 
+(defun move-spatula () 
+  (alter-urdf 1 "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 -0.20 0\" /></visual></link>" nil))
+
 (defun alter-urdf (action-id add remove)
   (with-ros-node ("urdf_management_tutorial")
-    (ros-info "urdf_mangement_tutorial" "Action: ~a" action-id)
-    (ros-info "urdf_mangement_tutorial" "xml_elements_to_add: ~a" add)
-    (ros-info "urdf_mangement_tutorial" "element_names_to_remove: ~a" remove)
+    (ros-info (urdf_mangement_tutorial) "Action: ~a" action-id)
+    (ros-info (urdf_mangement_tutorial) "xml_elements_to_add: ~a" add)
+    (ros-info (urdf_mangement_tutorial) "element_names_to_remove: ~a" remove)
     (roslisp:call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
                           :action action-id
                           :xml_elements_to_add add
                           :element_names_to_remove remove)))
+
+(defun add-spatula-to-parameter ()
+  (with-ros-node ("urdf_management_tutorial_parameter")
+    (ros-info (urdf_mangement_tutorial) "Added description of the spatula to the parameter server.")
+    (set-param "/urdf_management/spatula" *spatula*)))
