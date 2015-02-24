@@ -129,4 +129,4 @@
              (let ((from-link (getf joint-parents (intern from-joint))))
                (when from-link
                  (connected-to-robot from-link child-joints joint-parents 
-                                     num-of-links (1+ depth)))))))))
+                                     num-of-links robot (1+ depth)))))))))
