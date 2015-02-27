@@ -28,51 +28,38 @@
 
 (in-package :urdf-management)
 
-(defun remove-from-robot (link-names robot)
+(defun remove-from-robot (link-names robot parent-link-tree-original)
   "Searches for links and joints with the given names in the robot model and removes them."
-  (flet ((get-link (name) 
-           (let ((link (gethash name (links robot))))
-             (unless link
-               (ros-warn (urdf-management) "Link ~a not found." name)
-               (return-from remove-from-robot nil))
-             link))
-         (find-link (link links) (find (name link) links :key #'name)))
-    (let ((unremovable-links (mapcar #'get-link link-names))
-          (still-unremovable-links nil)
-          (removable-links nil))
-      (loop while unremovable-links
-            do (dolist (link unremovable-links)
-                 (let ((to-joints (to-joints link)))
-                   (if (or (not to-joints)
-                           (reduce (lambda (a b) (and a b))
-                                   (mapcar (lambda (joint)
-                                             (find-link (child joint) removable-links))
-                                           to-joints)))
-                       (push link removable-links)
-                       (push link still-unremovable-links))))
-               (if (and still-unremovable-links
-                        (equal unremovable-links (reverse still-unremovable-links)))
-                   (progn
-                     (ros-warn (urdf-management) "Cannot remove links ~a" 
-                                                (mapcar #'name still-unremovable-links))
-                     (return-from remove-from-robot nil))
-                   (progn 
-                     (setf unremovable-links still-unremovable-links)
-                     (setf still-unremovable-links nil))))
-      (dolist (link (reverse removable-links))
-        (remove-link link robot))))
-    t)
+  (let ((parent-link-tree (alexandria:copy-hash-table parent-link-tree-original)))
+    (dolist (link-name link-names)
+      (remhash link-name parent-link-tree))
 
-(defun remove-link (link robot)
+    ;; Check the parent-link-tree for circles and root links
+    (multiple-value-bind (valid root err) (valid-tree parent-link-tree)
+      (unless valid
+        (ros-warn (urdf-management) "~a" err)
+        (return-from remove-from-robot nil))
+      (setf (slot-value robot 'root-link) (gethash root (links robot))))
+
+    ;; Remove the links from the robot model
+    (dolist (link-name link-names)
+      (if (gethash link-name (links robot))
+          (remove-link link-name robot)
+          (ros-warn (urdf-management) "Link ~a not found" link-name)))
+
+    (values t parent-link-tree)))
+
+(defun remove-link (link-name robot)
   "Removes the `link' from the robot-model. Returns t if successfull."
-  (let* ((link (gethash (name link) (links robot)))
-         (parent-joint (from-joint link))
-         (parent-link (parent parent-joint)))
-    (unless (to-joints link)
-      (setf (slot-value parent-link 'to-joints) 
-            (remove-if (lambda (to-joint)
-                         (equal (name to-joint) (name parent-joint)))
-                       (to-joints parent-link)))
-      (remhash (name parent-joint) (joints robot))    
-      (remhash (name link) (links robot))
-      t)))
+  (let* ((link (gethash link-name (links robot)))
+         (parent-joint (from-joint link)))
+    (when parent-joint
+      (let ((parent-link (parent parent-joint)))
+        ;; remove the parent joint from the parent link's to-joints
+        (setf (slot-value parent-link 'to-joints) 
+              (remove-if (lambda (to-joint)
+                           (equal (name to-joint) (name parent-joint)))
+                         (to-joints parent-link)))
+        (remhash (name parent-joint) (joints robot))))
+    (remhash (name link) (links robot))
+    t))

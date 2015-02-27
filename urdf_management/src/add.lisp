@@ -28,15 +28,14 @@
 
 (in-package :urdf-management)
 
-(defun add-to-robot (xml robot)
+(defun add-to-robot (xml robot parent-link-tree-original)
   "Adds the links and joints descripted to the robot model."
   (let ((parsed-xml (s-xml:parse-xml-string (format nil "<container>~a</container>" xml)
                                             :output-type :xml-struct))
+        (parent-link-tree (alexandria:copy-hash-table parent-link-tree-original))
         (link-descriptions nil)
         (joint-descriptions nil)
-        (new-links nil)
-        (joint-parents nil)
-        (child-joints nil))
+        (root-name nil))
 
     ;; Get the descriptions of the joints and links from the xml
     (dolist (child (s-xml:xml-element-children parsed-xml))
@@ -69,30 +68,33 @@
           (unless joint-child
             (ros-warn (urdf-management) "No child name for joint: ~a" joint-desc)
             (return-from add-to-robot nil))
-          (push joint-parent joint-parents)
-          (push (intern joint-name) joint-parents)
-          (push joint-name child-joints)
-          (push (intern joint-child) child-joints))))  
+          (setf (gethash joint-child parent-link-tree) joint-parent))))
+
+    ;; Check the parent-link-tree for circles and root links
+    (multiple-value-bind (valid root err) (valid-tree parent-link-tree)
+      (unless valid
+        (ros-warn (urdf-management) "~a" err)
+        (return-from add-to-robot nil))
+      (setf root-name root))
  
     ;; Create the links from the description
     (dolist (link-desc link-descriptions)
       (let* ((link-name (s-xml:xml-element-attribute link-desc :|name|))
              (old-link (gethash link-name (links robot))))
-        (when old-link
-          (push (update-link old-link link-desc robot) new-links))
-        (unless old-link
-          (let ((link (create-link link-desc robot)))
-            (unless link
-              (ros-warn (urdf-management) "Invalid link description: ~a" link-desc)
-              (return-from add-to-robot nil))
-            (push link new-links)))))
-
-    ;; Add the new links to the robot-model
-    (dolist (link new-links)
-      (unless (connected-to-robot (name link) child-joints joint-parents (length new-links) robot)
-        (ros-warn (urdf-management) "No connection between root link and ~a" (name link))
-        (return-from add-to-robot nil))
-      (setf (gethash (name link) (links robot)) link))
+        (unless (nth-value 1 (gethash link-name parent-link-tree))
+          (progn
+            (ros-error (urdf-management) "Link ~a not connnected to robot model." link-desc)
+            (return-from add-to-robot nil)))
+        (if old-link
+            (setf (gethash link-name (links robot)) (update-link old-link link-desc robot))
+            (let ((link (create-link link-desc robot)))
+              (unless link
+                (ros-warn (urdf-management) "Invalid link description: ~a" link-desc)
+                (return-from add-to-robot nil))
+              (setf (gethash link-name (links robot)) link)))))
+    
+    ;; Set root link
+    (setf (slot-value robot 'root-link) (gethash root-name (links robot)))
  
     ;; Create the joints from the description and add them to the robot model
     (dolist (joint-desc joint-descriptions)
@@ -107,7 +109,7 @@
               (return-from add-to-robot nil))
             (setf (gethash (name joint) (joints robot)) joint)))))
 
-    t))
+    (values t parent-link-tree)))
 
 (defun create-link (link-desc robot)
   "Parses the xml description of the link. If it's a valid link the link is returned else nil."
@@ -118,15 +120,3 @@
   "Parses the xml description of the joint. If it's a valid joint the joint is returned else nil."
   (let ((joint (cl-urdf::parse-xml-node :|joint| joint-desc robot)))
     joint))    
-
-(defun connected-to-robot (link-name child-joints joint-parents num-of-links robot &optional (depth 0))
-  "Checks if a link is connected to a link of the robot-model."
-   (if (gethash link-name (links robot))
-       t
-       (when (< depth num-of-links)
-         (let ((from-joint (getf child-joints (intern link-name))))
-           (when from-joint
-             (let ((from-link (getf joint-parents (intern from-joint))))
-               (when from-link
-                 (connected-to-robot from-link child-joints joint-parents 
-                                     num-of-links robot (1+ depth)))))))))

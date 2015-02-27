@@ -32,6 +32,7 @@
   "The robot description that is used if there is no description on the parameter server.")
 
 (defvar *robot-model* nil)
+(defvar *parent-link-tree* nil)
 (defvar *urdf-pub* nil)
 
 (defun start-urdf-management ()
@@ -40,17 +41,30 @@
 
 (def-service-callback AlterUrdf (action xml_elements_to_add element_names_to_remove)
   (ros-info (urdf-management) "Altering robot description.")
-  (let ((success (cond
-                   ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
-                    (add-to-robot xml_elements_to_add *robot-model*))
-                   ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
-                    (remove-from-robot (coerce element_names_to_remove 'list) *robot-model*)))))
+  (let ((success (callback-handler action xml_elements_to_add 
+                                   element_names_to_remove)))
     (when success (publish-urdf))
     (make-response :success success)))
+
+(defun callback-handler (action add remove)
+  (cond
+    ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
+     (multiple-value-bind (succ tree)
+         (add-to-robot add *robot-model* *parent-link-tree*)
+       (when succ 
+         (setf *parent-link-tree* tree)
+         t)))
+    ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
+     (multiple-value-bind (succ tree) 
+         (remove-from-robot (coerce remove 'list) *robot-model* *parent-link-tree*)
+       (when succ
+         (setf *parent-link-tree* tree)
+         t)))))
 
 (defun alter-urdf-service ()
   "Registers the service to alter the robot description."
   (setf *robot-model* (parse-urdf (get-param "robot_description" *default-description*)))
+  (setf *parent-link-tree* (get-tree *robot-model*))
   (setf *urdf-pub* (advertise "/dynamic_robot_description" 'std_msgs-msg:String :latch t))
   (publish-urdf)
   (register-service "alter_urdf" 'AlterUrdf)
