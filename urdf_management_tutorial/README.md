@@ -40,6 +40,9 @@ You should see the PR2 in rviz like you would with the normal RobotModel:
 
 
 ## Adding and removing a link
+
+If you are using ros indigo the spatula will currently not be displayed beause of an issue in rviz. See https://github.com/ros-visualization/rviz/issues/853.
+
 To add a link type in a new terminal:
   * ```rosrun urdf_management_tutorial add_spatula.lisp```
 
