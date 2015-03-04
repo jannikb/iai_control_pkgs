@@ -7,9 +7,11 @@ Checkout the following repos into your workspace:
   * https://github.com/code-iai/iai_control_pkgs
   * https://github.com/code-iai/iai_common_msgs
   * https://github.com/ros/roslisp_common (only until a version with cl_urdf gets released)
+  * https://github.com/cram-code/cram_3rdparty
 
 Additional repos required only for this tutorial:
-  * https://github.com/cram-code/cram_bridge.git
+  * https://github.com/cram-code/cram_core
+  * https://github.com/cram-code/cram_bridge
   * https://github.com/code-iai/iai_robots
 
 Build all packages by running ```catkin_make```.
