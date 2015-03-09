@@ -74,8 +74,9 @@ You can also remove parts of the initial robot description. To remove the left g
 
 ## Using the simple interface
 
-Add the description of the spatula to the parameter server:
-* ```rosparam set /urdf_management/spatula "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 0 0\" /><geometry><mesh filename=\"package://urdf_management_tutorial/meshes/kitchen/hand-tools/edeka_spatula1.dae\" /></geometry></visual></link><joint name=\"joint_spatula\" type=\"fixed\"><parent link=\"l_gripper_r_finger_tip_link\" /><child link=\"spatula\" /><origin rpy=\"-1.57 0 0.5\" xyz=\"0.22 0 0\"/></joint>"``` 
+Add the description of the spatula to the parameter server using one of the two commands:
+* ```rosparam set /urdf_management/spatula "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 0 0\" /><geometry><mesh filename=\"package://urdf_management_tutorial/meshes/kitchen/hand-tools/edeka_spatula1.dae\" /></geometry></visual></link><joint name=\"joint_spatula\" type=\"fixed\"><parent link=\"l_gripper_r_finger_tip_link\" /><child link=\"spatula\" /><origin rpy=\"-1.57 0 0.5\" xyz=\"0.22 0 0\"/></joint>"```
+* ```rosrun urdf_management_tutorial spatula_to_parameter_server.lisp```
 
 Add the spatula to the robot description:
 * ```rosservice call /simple_alter_urdf 1 "spatula"```
