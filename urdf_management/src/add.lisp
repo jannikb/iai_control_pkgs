@@ -30,13 +30,12 @@
 
 (defun add-to-robot (xml robot parent-link-tree-original)
   "Adds the links and joints descripted to the robot model."
-  (let ((parsed-xml (s-xml:parse-xml-string (format nil "<container>~a</container>" xml)
-                                            :output-type :xml-struct))
-         (parent-link-tree (alexandria:copy-hash-table parent-link-tree-original))
-         (link-descriptions nil)
-         (new-link-names nil)
-         (joint-descriptions nil)
-         (root-name nil))
+  (let ((parsed-xml (parse-xml-string xml))
+        (parent-link-tree (alexandria:copy-hash-table parent-link-tree-original))
+        (link-descriptions nil)
+        (new-link-names nil)
+        (joint-descriptions nil)
+        (root-name nil))
 
     ;; Get the descriptions of the joints and links from the xml
     (dolist (child (s-xml:xml-element-children parsed-xml))
@@ -46,9 +45,8 @@
         (:|link| (push child link-descriptions))
         (:|joint| (push child joint-descriptions))
         (otherwise         
-         (ros-error (urdf-management) 
-                    "Description contains an illegal element: ~a" child)
-         (return-from add-to-robot nil))))
+         (ros-warn (urdf-management) 
+                   "Ignoring element: ~a" child))))
 
     (setf new-link-names (mapcar (lambda (link-desc)
                                    (s-xml:xml-element-attribute link-desc :|name|))
@@ -135,6 +133,15 @@
             (setf (gethash (name joint) (joints robot)) joint)))))
 
     (values t parent-link-tree)))
+
+(defun parse-xml-string (xml)
+  (let* ((parsed (s-xml:parse-xml-string (format nil "<container>~a</container>" xml)
+                                        :output-type :xml-struct))
+         (first-child (s-xml:first-xml-element-child parsed)))
+    (if (and first-child (eql (s-xml:xml-element-name first-child) :|urdf|))
+        first-child
+        parsed)))
+  
 
 (defun create-link (link-desc robot)
   "Parses the xml description of the link. If it's a valid link the link is returned else nil."
