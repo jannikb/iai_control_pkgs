@@ -41,6 +41,7 @@
     :components
     ((:file "package")
      (:file "update" :depends-on ("package"))
+     (:file "attach-urdf" :depends-on ("package"))
      (:file "tree" :depends-on ("package"))
      (:file "add" :depends-on ("package" "update" "tree"))
      (:file "remove" :depends-on ("package" "tree"))

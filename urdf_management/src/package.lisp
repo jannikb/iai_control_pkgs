@@ -35,4 +35,5 @@
         #:iai_urdf_msgs-srv)
   (:export alter-urdf-service
            start-urdf-management
-           start-simple-service))
+           start-simple-service
+           urdf-to-attach))
