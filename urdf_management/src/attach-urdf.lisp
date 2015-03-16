@@ -34,12 +34,16 @@ and all link and joint names have `prefix' added before them."
   (let ((urdf-xml (read-urdf-xml urdf-path))
         (joint-xml (s-xml:parse-xml-string joint-string :output-type :xml-struct)))
     (when prefix
+      ;; Add prefixes to the joint that connects the new urdf with the robot
+      ;; except the parent of that joint
       (add-prefix-name joint-xml prefix)
       (add-prefix-to-joint-elements joint-xml :|child| prefix)
+      ;; Add prefixes to the joints and links of the urdf
       (dolist (child (s-xml:xml-element-children urdf-xml))
         (case (s-xml:xml-element-name child)
           (:|link| (add-prefix-name child prefix))
           (:|joint| (add-prefix-joint child prefix)))))
+    ;; Add the xml of the connector joint to the urdf xml
     (push joint-xml (s-xml:xml-element-children urdf-xml))
     (s-xml:print-xml-string urdf-xml :input-type :xml-struct)))
 
@@ -53,7 +57,7 @@ and all link and joint names have `prefix' added before them."
     (s-xml:parse-xml-file urdf-file :output-type :xml-struct)))
 
 (defun ros-path->absolute-path (ros-path)
-  "Converts ros-path of the form '<ros-pkg-name>/rest/of/the.path' to an absolute path."
+  "Converts a ros-path of the form '<ros-pkg-name>/rest/of/the.path' to an absolute path."
   (let* ((pkg-name (second (pathname-directory ros-path)))
          (absolute-pkg-path (ros-load-manifest:ros-package-path pkg-name))
          (path-from-pkg (subseq (namestring ros-path) 

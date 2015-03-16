@@ -26,17 +26,17 @@
 ;;; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ;;; POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-user)
+(in-package :urdf-management)
 
-(defpackage urdf-management
-  (:use #:common-lisp
-        #:roslisp
-        #:cl-urdf
-        #:iai_urdf_msgs-srv)
-  (:export alter-urdf-service
-           call-alter-urdf
-           start-urdf-management
-           start-simple-service
-           urdf-alter-urdf-service
-           start-urdf-service
-           urdf-to-attach))
+
+(defparameter *default-description* "<robot name=\"default\"><link name=\"base_link\"/></robot>"
+  "The robot description that is used if there is no description on the parameter server.")
+
+(defparameter *main-service-name* "urdf_management/alter_urdf"
+  "Name of the service that directly handles the robot description.")
+
+(defparameter *simple-service-name* "urdf_management/simple_alter_urdf"
+  "Name of the service that uses descriptions from the parameter server.")
+
+(defparameter *urdf-service-name* "urdf_management/urdf_alter_urdf"
+  "Name of the service that reads urdfs and attaches and dettaches them.")

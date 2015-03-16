@@ -29,7 +29,7 @@
 (in-package :urdf-management)
 
 (defun start-simple-service ()
-  (with-ros-node ("urdf_management" :spin t)
+  (with-ros-node ("urdf_management/simple_service" :spin t)
     (simple-alter-urdf-service)))
 
 (def-service-callback SimpleAlterUrdf (action parameter)
@@ -56,7 +56,7 @@
 
 (defun simple-alter-urdf-service ()
   "Registers the service."
-  (register-service "simple_alter_urdf" 'SimpleAlterUrdf)
+  (register-service *simple-service-name* 'SimpleAlterUrdf)
   (ros-info (urdf-management simple-service) "Ready to alter urdf."))
 
 (defun add-description (description)
@@ -68,21 +68,6 @@
   "Calls the AlterUrdf service to remove `links' from the robot description."
   (call-alter-urdf (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove)
                    "" links))
-
-(defun call-alter-urdf (action add remove &optional (timeout 5))
-  "Calls the service alter_urdf with `action', `add' and `remove' as parameters."
-  (let ((found-service (wait-for-service "alter_urdf" timeout)))
-   (if found-service
-       (let ((response (call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
-                               :action action
-                               :xml_elements_to_add add
-                               :element_names_to_remove remove)))
-         (unless (success response)
-           (ros-warn (urdf-management simple-service) "AlterUrdf service didn't succeed."))
-         (success response))
-       (progn
-         (ros-error (urdf-management simple-service) "No service 'alter_urdf' found.")
-         nil))))
      
 (defun get-link-names (description)
   "Gets a xml descritpion of robot parts and returns the names of the links."

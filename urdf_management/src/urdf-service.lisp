@@ -26,17 +26,25 @@
 ;;; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ;;; POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-user)
+(in-package :urdf-management)
 
-(defpackage urdf-management
-  (:use #:common-lisp
-        #:roslisp
-        #:cl-urdf
-        #:iai_urdf_msgs-srv)
-  (:export alter-urdf-service
-           call-alter-urdf
-           start-urdf-management
-           start-simple-service
-           urdf-alter-urdf-service
-           start-urdf-service
-           urdf-to-attach))
+(defun start-urdf-service ()
+  (with-ros-node ("urdf_management/urdf_service" :spin t)
+    (urdf-alter-urdf-service)))
+
+(def-service-callback UrdfAlterUrdf (action urdf joint prefix)
+  (let ((success nil))
+    (cond
+      ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
+       (ros-info (urdf-management) "Adding urdf to robot description.")
+       (let ((description (urdf-to-attach urdf joint (unless (equal prefix "") prefix))))
+         (call-alter-urdf action description "")))
+      ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
+       (ros-info (urdf-management) "Adding urdf to robot description.")
+       (ros-warn (urdf-management) "Not implemented yet.")
+       t))
+    (make-response :success success)))
+
+(defun urdf-alter-urdf-service ()
+  "Registers the service to alter the robot description."
+  (register-service *urdf-service-name* 'UrdfAlterUrdf))

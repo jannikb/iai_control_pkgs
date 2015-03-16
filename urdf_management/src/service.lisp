@@ -28,15 +28,12 @@
 
 (in-package :urdf-management)
 
-(defparameter *default-description* "<robot name=\"default\"><link name=\"base_link\"/></robot>"
-  "The robot description that is used if there is no description on the parameter server.")
-
 (defvar *robot-model* nil)
 (defvar *parent-link-tree* nil)
 (defvar *urdf-pub* nil)
 
 (defun start-urdf-management ()
-  (with-ros-node ("urdf_management" :spin t)
+  (with-ros-node ("urdf_management/service" :spin t)
     (alter-urdf-service)))
 
 (def-service-callback AlterUrdf (action xml_elements_to_add element_names_to_remove)
@@ -67,9 +64,24 @@
   (setf *parent-link-tree* (get-tree *robot-model*))
   (setf *urdf-pub* (advertise "/dynamic_robot_description" 'std_msgs-msg:String :latch t))
   (publish-urdf)
-  (register-service "alter_urdf" 'AlterUrdf)
+  (register-service *main-service-name* 'AlterUrdf)
   (ros-info (urdf-management) "Ready to alter urdf."))
   
 (defun publish-urdf ()
   "Generates an urdf description from the robot model and publishes it."
   (publish-msg *urdf-pub* :data (generate-urdf-string *robot-model*)))
+
+(defun call-alter-urdf (action add remove &optional (timeout 5))
+  "Calls the service alter_urdf with `action', `add' and `remove' as parameters."
+  (let ((found-service (wait-for-service *main-service-name* timeout)))
+   (if found-service
+       (let ((response (call-service *main-service-name* 'iai_urdf_msgs-srv:alterurdf 
+                               :action action
+                               :xml_elements_to_add add
+                               :element_names_to_remove remove)))
+         (unless (success response)
+           (ros-warn (urdf-management simple-service) "AlterUrdf service didn't succeed."))
+         (success response))
+       (progn
+         (ros-error (urdf-management simple-service) "No service ~a found." *main-service-name*)
+         nil))))
