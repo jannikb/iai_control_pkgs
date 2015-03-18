@@ -79,7 +79,7 @@ Add the description of the spatula to the parameter server using one of the two 
 * ```rosrun urdf_management_tutorial spatula_to_parameter_server.lisp```
 
 Add the spatula to the robot description:
-* ```rosservice call /simple_alter_urdf 1 "spatula"```
+* ```rosservice call /urdf_management/simple_alter_urdf 1 "spatula"```
 
 Remove the spatula from the robot description:
-* ```rosservice call /simple_alter_urdf 2 "spatula"```
+* ```rosservice call /urdf_management/simple_alter_urdf 2 "spatula"```
