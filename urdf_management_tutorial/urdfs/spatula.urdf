@@ -1,0 +1,10 @@
+<robot name="spatula_urdf">
+  <link name="spatula">
+    <visual>
+      <origin rpy="0 0 0 " xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://urdf_management_tutorial/meshes/kitchen/hand-tools/edeka_spatula1.dae" />
+      </geometry>
+    </visual>
+  </link>
+</robot>

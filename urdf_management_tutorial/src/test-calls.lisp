@@ -57,7 +57,7 @@
     (ros-info (urdf_mangement_tutorial) "Action: ~a" action-id)
     (ros-info (urdf_mangement_tutorial) "xml_elements_to_add: ~a" add)
     (ros-info (urdf_mangement_tutorial) "element_names_to_remove: ~a" remove)
-    (roslisp:call-service "alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
+    (roslisp:call-service "/urdf_management/alter_urdf" 'iai_urdf_msgs-srv:alterurdf 
                           :action action-id
                           :xml_elements_to_add add
                           :element_names_to_remove remove)))

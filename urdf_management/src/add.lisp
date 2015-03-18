@@ -138,7 +138,7 @@
   (let* ((parsed (s-xml:parse-xml-string (format nil "<container>~a</container>" xml)
                                         :output-type :xml-struct))
          (first-child (s-xml:first-xml-element-child parsed)))
-    (if (and first-child (eql (s-xml:xml-element-name first-child) :|urdf|))
+    (if (and first-child (eql (s-xml:xml-element-name first-child) :|robot|))
         first-child
         parsed)))
   
