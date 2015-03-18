@@ -19,12 +19,12 @@ The service takes 3 arguments ```action```, ```xml_elements_to_add``` and ```ele
 ### Examples
 Add a link and a joint:
 ```
-rosservice call /alter_urdf 1 "<link name=\"new_link\"/> <joint name=\"new_joint\" type=\"fixed\"><parent link=\"base_link\"/><child link=\"new_link\"/></joint>" '[]'
+rosservice call /urdf_management/alter_urdf 1 "<link name=\"new_link\"/> <joint name=\"new_joint\" type=\"fixed\"><parent link=\"base_link\"/><child link=\"new_link\"/></joint>" '[]'
 ```
 
 Remove a link and the joint that connects it to the robot:
 ```
-rosservice call /alter_urdf 2 "" '["new_link"]'
+rosservice call /urdf_management/alter_urdf 2 "" '["new_link"]'
 ```
 
 ## SimpleAlterUrdf
@@ -43,12 +43,12 @@ The SimpleAlterUrdf service takes the arguments ```action``` and ```parameter```
 Add a link and a joint:
 ```
 rosparam set urdf_management/new_link_and_joint "<link name=\"new_link\"/> <joint name=\"new_joint\" type=\"fixed\"><parent link=\"base_link\"/><child link=\"new_link\"/></joint>"
-rosservice call /alter_urdf 1 new_link_and_joint
+rosservice call /urdf_management/simple_alter_urdf 1 new_link_and_joint
 ```
 
 Remove the link and joint from the previous example:
 ```
-rosservice call /alter_urdf 2 new_link_and_joint
+rosservice call /urdf_management/simple_alter_urdf 2 new_link_and_joint
 ```
 
 
