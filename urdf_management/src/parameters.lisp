@@ -32,11 +32,11 @@
 (defparameter *default-description* "<robot name=\"default\"><link name=\"base_link\"/></robot>"
   "The robot description that is used if there is no description on the parameter server.")
 
-(defparameter *main-service-name* "urdf_management/alter_urdf"
+(defparameter *main-service-name* "/urdf_management/alter_urdf"
   "Name of the service that directly handles the robot description.")
 
-(defparameter *simple-service-name* "urdf_management/simple_alter_urdf"
+(defparameter *simple-service-name* "/urdf_management/simple_alter_urdf"
   "Name of the service that uses descriptions from the parameter server.")
 
-(defparameter *urdf-service-name* "urdf_management/urdf_alter_urdf"
+(defparameter *urdf-service-name* "/urdf_management/urdf_alter_urdf"
   "Name of the service that reads urdfs and attaches and dettaches them.")

@@ -79,5 +79,14 @@ and all link and joint names have `prefix' added before them."
   (let ((xml (cl-urdf::xml-element-child joint-xml key)))
     (setf (s-xml:xml-element-attribute xml :|link|)
           (format nil "~a~a" prefix (s-xml:xml-element-attribute xml :|link|)))))
-        
-                
+
+(defun get-urdf-links (urdf-path &optional prefix)
+  (let ((links (mapcar (lambda (child) (s-xml:xml-element-attribute child :|name|))
+                       (remove-if-not (lambda (child)
+                                        (eql (s-xml:xml-element-name child) :|link|))
+                                      (s-xml:xml-element-children (read-urdf-xml urdf-path))))))
+    (if (and prefix (not (equal prefix "")))
+        (mapcar (lambda (link) (concatenate 'string prefix link))
+                links)
+        links)))
+         

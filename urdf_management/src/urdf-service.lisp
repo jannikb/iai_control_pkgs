@@ -30,19 +30,21 @@
 
 (defun start-urdf-service ()
   (with-ros-node ("urdf_management/urdf_service" :spin t)
-    (urdf-alter-urdf-service)))
+    (urdf-alter-urdf-service)
+    (ros-info (urdf_management) "Started ~a" *urdf-service-name*)))
 
-(def-service-callback UrdfAlterUrdf (action urdf joint prefix)
+(def-service-callback UrdfAlterUrdf (action urdf joint_description prefix)
   (let ((success nil))
     (cond
       ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
        (ros-info (urdf-management) "Adding urdf to robot description.")
-       (let ((description (urdf-to-attach urdf joint (unless (equal prefix "") prefix))))
-         (call-alter-urdf action description "")))
+       (let ((description (urdf-to-attach urdf joint_description
+                                          (unless (equal prefix "") prefix))))
+         (setf success (call-alter-urdf action description ""))))
       ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
-       (ros-info (urdf-management) "Adding urdf to robot description.")
-       (ros-warn (urdf-management) "Not implemented yet.")
-       t))
+         (setf success (call-alter-urdf action "" (get-urdf-links urdf prefix))))
+      (t (ros-error (urdf-management simple-service) "Action ~a undefined." action)
+         (setf success nill)))
     (make-response :success success)))
 
 (defun urdf-alter-urdf-service ()
