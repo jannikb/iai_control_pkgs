@@ -83,3 +83,11 @@ Add the spatula to the robot description:
 
 Remove the spatula from the robot description:
 * ```rosservice call /urdf_management/simple_alter_urdf 2 "spatula"```
+
+## Using the urdf file
+
+Add the spatula to the robot description
+* ```rosservice call /urdf_management/urdf_alter_urdf 1 "urdf_management_tutorial/urdfs/spatula.urdf" "<joint name=\"joint_spatula\" type=\"fixed\"><parent link=\"l_gripper_r_finger_tip_link\" /><child link=\"spatula\" /><origin rpy=\"-1.57 0 0.5\" xyz=\"0.22 0 0\"/></joint>" ""```
+
+Remvove the spatula from the robot description
+* ```rosservice call /urdf_management/urdf_alter_urdf 2 "urdf_management_tutorial/urdfs/spatula.urdf" "" ""```
