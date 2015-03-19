@@ -33,6 +33,9 @@
   (let ((parent-link-tree (alexandria:copy-hash-table parent-link-tree-original)))
     (dolist (link-name link-names)
       (remhash link-name parent-link-tree))
+    (dolist (link-name (alexandria:hash-table-keys parent-link-tree))
+      (when (member (gethash link-name parent-link-tree) link-names :test 'equal)
+        (setf (gethash link-name parent-link-tree) nil)))
 
     ;; Check the parent-link-tree for circles and root links
     (multiple-value-bind (valid root err) (valid-tree parent-link-tree)
@@ -52,7 +55,8 @@
 (defun remove-link (link-name robot)
   "Removes the `link' from the robot-model. Returns t if successfull."
   (let* ((link (gethash link-name (links robot)))
-         (parent-joint (from-joint link)))
+         (parent-joint (from-joint link))
+         (child-joints (to-joints link)))
     (when parent-joint
       (let ((parent-link (parent parent-joint)))
         ;; remove the parent joint from the parent link's to-joints
@@ -61,5 +65,8 @@
                            (equal (name to-joint) (name parent-joint)))
                          (to-joints parent-link)))
         (remhash (name parent-joint) (joints robot))))
+    (dolist (child-joint child-joints)
+      (setf (slot-value (child child-joint) 'from-joint) nil)
+      (remhash (name child-joint) (joints robot)))            
     (remhash (name link) (links robot))
     t))
