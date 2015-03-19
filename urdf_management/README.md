@@ -51,4 +51,30 @@ Remove the link and joint from the previous example:
 rosservice call /urdf_management/simple_alter_urdf 2 new_link_and_joint
 ```
 
+## UrdfAlterUrdf
 
+### Start
+With the AlterUrdf service running type:
+  * ```rosrun urdf_management urdf_alter_urdf_service.lisp```
+  
+Without the AlterUrdf service running type:
+  * ```roslaunch urdf_management urdf_management.launch```
+
+### Usage 
+The service takes 4 arguments ```action```, ```urdf```, ```joint_description``` and ```prefix```.
+  * ```action```: ```ADD``` to connect the ```urdf``` to the robot description with ```joint_description```, ```REMOVE``` to remove the ```urdf``` from the robot description.
+  * ```urdf```: A path to an urdf. Either an absolute path or of the form ```<ros_package>/my.urdf```.
+  * ```joint_description```: xml description of the joint that should connect the urdf with the robot description.
+  * ```prefix```: A prefix that will be added in front of the names of the joints and links of the ```urdf``` and ``joint_description```.
+
+
+### Examples
+Add a link and a joint:
+```
+rosservice call /urdf_management/urdf_alter_urdf 1 "my_packake/my.urdf" <joint name=\"new_joint\" type=\"fixed\"><parent link=\"base_link\"/><child link=\"new_link\"/></joint>" "prefix_"
+```
+
+Remove a link and the joint that connects it to the robot:
+```
+rosservice call /urdf_management/alter_urdf 2 "my_packake/my.urdf" "" "prefix_"
+```
