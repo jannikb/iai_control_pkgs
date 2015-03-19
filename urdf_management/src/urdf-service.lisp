@@ -44,7 +44,7 @@
       ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
          (setf success (call-alter-urdf action "" (get-urdf-links urdf prefix))))
       (t (ros-error (urdf-management simple-service) "Action ~a undefined." action)
-         (setf success nill)))
+         (setf success nil)))
     (make-response :success success)))
 
 (defun urdf-alter-urdf-service ()
