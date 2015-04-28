@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="model" default="$(find iai_sherpa_box)/urdf/box.urdf.xacro"/>
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(arg model)'" />
+
+  <include file="$(find urdf_management)/launch/urdf_management.launch" />
+  <include file="$(find dynamic_robot_state_publisher)/launch/dynamic_robot_state_publisher.launch" />
+
+</launch>

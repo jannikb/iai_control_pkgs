@@ -1,0 +1,6 @@
+#!/bin/bash
+pos=(left_front right_front left_back right_back)
+for i in ${pos[@]}; do
+  rosservice call /urdf_management/urdf_alter_urdf 2 "urdf_management_tutorial/urdfs/quadrotor.urdf" "" "${i}_";
+done
+exit 0
