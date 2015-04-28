@@ -1,3 +1,16 @@
+# Sherpa demo
+
+For installation instructions see below plus iai_rescue_robots.
+
+This demo will show the sherpa_box in rviz and you will be able to add and remove four 'wasps' to it.
+ * roscore
+ * roslaunch urdf_management_tutorial sherpa_box.launch
+ * rosrun urdf_management_tutorial sherpa_box_add_wasps
+ * rosrun urdf_management_tutorial sherpa_box_remove_wasps
+
+To see the changing robot model in rviz you have to use the DynamicRobotModel instead of the RobotModel plugin.
+
+
 # urdf_management tutorial
 
 
