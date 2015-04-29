@@ -1,6 +1,6 @@
 #!/bin/bash
 pos=(left_front right_front left_back right_back)
 for i in ${pos[@]}; do
-  rosservice call /urdf_management/urdf_alter_urdf 1 "urdf_management_tutorial/urdfs/quadrotor.urdf" "<joint name=\"quad_docker_joint\" type=\"fixed\"><parent link=\"quadrotor_dock_${i}_link\" /><child link=\"gripper_dock_link\" /><origin rpy=\"0 0 0\" xyz=\"0 0 0\"/></joint>" "${i}_";
+  rosservice call /urdf_management/urdf_alter_urdf 1 "urdf_management_tutorial/urdfs/quadrotor.urdf" "<joint name=\"quad_docker_joint\" type=\"fixed\"><parent link=\"quadrotor_dock_${i}_link\" /><child link=\"recharge_dock_link\" /><origin rpy=\"3.14 0 0\" xyz=\"0 0 0\"/></joint>" "${i}_";
 done
 exit 0
