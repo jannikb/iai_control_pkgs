@@ -30,7 +30,8 @@
   :author "Jannik Buckelo <jannikbu@cs.uni-bremen.de>"
   :licence "BSD"
 
-  :depends-on (:cl-urdf
+  :depends-on (:cl-transforms
+               :cl-urdf
                :roslisp
                :alexandria
                :iai_urdf_msgs-srv
