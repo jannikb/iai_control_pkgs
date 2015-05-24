@@ -26,22 +26,24 @@
 ;;; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ;;; POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-user)
+(in-package :urdf-management-test)
 
-(defpackage urdf-management
-  (:use #:common-lisp
-        #:roslisp
-        #:cl-urdf
-        #:iai_urdf_msgs-srv)
-  (:export add-link
-           remove-link
-           replace-link
-           replace-joint
-           ;; old exports might change
-           alter-urdf-service
-           call-alter-urdf
-           start-urdf-management
-           start-simple-service
-           urdf-alter-urdf-service
-           start-urdf-service
-           urdf-to-attach))
+(defun load-robot (name)
+  "Parses the urdf file with name `name' in the test_urdfs directory."
+  (cl-urdf:parse-urdf (pathname (format nil "test_urdfs/~a" name))))
+
+(defun test-add-link (robot link joint)
+  (let ((parent-link (gethash (parent-name joint) (links robot))))
+    (add-link robot link joint)
+    (assert-equal (from-joint link) joint)
+    (assert-equal (child joint) link)
+    (assert-true (member joint (to-joints parent-link)))))
+
+
+(define-test simple-robot-add-link
+  (let ((robot (load-robot "simple_robot.urdf"))
+        (link (make-instance 'link :name "link3"))
+        (joint (make-instance 'joint :name "joint2"
+                              :parent-name "link2"
+                              :child-name "link3")))
+    (test-add-link robot link joint)))

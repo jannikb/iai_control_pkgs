@@ -28,20 +28,8 @@
 
 (in-package :cl-user)
 
-(defpackage urdf-management
-  (:use #:common-lisp
-        #:roslisp
-        #:cl-urdf
-        #:iai_urdf_msgs-srv)
-  (:export add-link
-           remove-link
-           replace-link
-           replace-joint
-           ;; old exports might change
-           alter-urdf-service
-           call-alter-urdf
-           start-urdf-management
-           start-simple-service
-           urdf-alter-urdf-service
-           start-urdf-service
-           urdf-to-attach))
+(defpackage urdf-management-test
+  (:use :cl :lisp-unit :cl-urdf :urdf-management)
+  (:shadowing-import-from :cl-urdf :robot :link :joint :links :joints
+                          :to-joints :from-joint :name
+                          :parent-name :child-name :child :parent))

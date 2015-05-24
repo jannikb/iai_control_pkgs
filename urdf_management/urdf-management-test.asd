@@ -26,22 +26,9 @@
 ;;; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ;;; POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-user)
-
-(defpackage urdf-management
-  (:use #:common-lisp
-        #:roslisp
-        #:cl-urdf
-        #:iai_urdf_msgs-srv)
-  (:export add-link
-           remove-link
-           replace-link
-           replace-joint
-           ;; old exports might change
-           alter-urdf-service
-           call-alter-urdf
-           start-urdf-management
-           start-simple-service
-           urdf-alter-urdf-service
-           start-urdf-service
-           urdf-to-attach))
+(defsystem urdf-management-test
+  :depends-on ("lisp-unit" "urdf-management")
+  :components ((:module "test"
+                        :components
+                        ((:file "package")
+                         (:file "tests" :depends-on ("package"))))))

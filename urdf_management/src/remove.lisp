@@ -31,16 +31,19 @@
 (defgeneric remove-link (robot link)
   (:documentation ""))
 
-(defmethod remvove-link ((robot robot) (link string))
-  (remove-link robot (gethash link (links robot))))
+(defmethod remove-link ((robot robot) (link-name string))
+  (let ((link (gethash link-name (links robot))))
+    (flet ((remove-child (joint)
+             (remove-link robot (child joint))))
+      (mapcar #'remove-child (to-joints link))
+      (remhash (name (from-joint link)) (joints robot))
+      (setf (to-joints (parent (from-joint link)))
+            (remove (from-joint link) (to-joints (parent (from-joint link)))))
+      (remhash (name link) (links robot)))
+    robot))
 
 (defmethod remove-link ((robot robot) (link link))
-  (flet ((remove-child (joint)
-           (remove-link robot (child joint))
-           (remhash (name joint) (joints robot))))
-    (mapcar #'remove-child (to-joints link))
-    (remhash (name link) (links robot))))
-  
+  (remove-link robot (name link)))
 
 ;; (defun remove-from-robot (link-names robot parent-link-tree-original)
 ;;   "Searches for links and joints with the given names in the robot model and removes them."

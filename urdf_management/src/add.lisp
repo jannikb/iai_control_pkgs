@@ -38,9 +38,11 @@
     
 
 (defmethod add-link ((robot robot) (link link) (joint joint))
-  (unless (and (equal (child-name joint) (name link)))
-               (gethash (name joint) (joints robot))
-               (gethash (name link) (links robot))
+  (unless (and (equal (child-name joint) (name link))
+               (not (gethash (name joint) (joints robot)))
+               (not (gethash (name link) (links robot)))
+               (gethash (parent-name joint) (links robot)))
+    (format t "early exit2")
     (return-from add-link nil))
   ;; Add link and joint
   (setf (gethash (name link) (links robot)) link)
@@ -48,7 +50,7 @@
   ;; Set other propoerties of the link and joint
   (setf (from-joint link) joint)
   (setf (child joint) link)
-  (let ((parent-link (gethash (parent-name joint) (joints robot))))
+  (let ((parent-link (gethash (parent-name joint) (links robot))))
     (setf (parent joint) parent-link)
     (setf (to-joints parent-link) (cons joint (to-joints parent-link))))
   robot)
