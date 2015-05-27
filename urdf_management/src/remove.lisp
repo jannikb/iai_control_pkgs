@@ -33,14 +33,15 @@
 
 (defmethod remove-link ((robot robot) (link-name string))
   (let ((link (gethash link-name (links robot))))
-    (flet ((remove-child (joint)
-             (remove-link robot (child joint))))
-      (mapcar #'remove-child (to-joints link))
-      (remhash (name (from-joint link)) (joints robot))
-      (setf (to-joints (parent (from-joint link)))
-            (remove (from-joint link) (to-joints (parent (from-joint link)))))
-      (remhash (name link) (links robot)))
-    robot))
+    (when link
+      (flet ((remove-child (joint)
+               (remove-link robot (child joint))))
+        (mapcar #'remove-child (to-joints link))
+        (remhash (name (from-joint link)) (joints robot))
+        (setf (to-joints (parent (from-joint link)))
+              (remove (from-joint link) (to-joints (parent (from-joint link)))))
+        (remhash (name link) (links robot)))
+      robot)))
 
 (defmethod remove-link ((robot robot) (link link))
   (remove-link robot (name link)))

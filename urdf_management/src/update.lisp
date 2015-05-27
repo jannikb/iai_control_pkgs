@@ -38,7 +38,7 @@
   (let ((old-link (gethash (name link) (links robot))))
     (unless old-link
       (return-from replace-link nil))
-    (setf (child (form-joint old-link)) link)
+    (setf (child (from-joint old-link)) link)
     (mapcar (lambda (to-joint) (setf (parent to-joint) link))
             (to-joints old-link))
     (setf (gethash (name link) (links robot)) link)

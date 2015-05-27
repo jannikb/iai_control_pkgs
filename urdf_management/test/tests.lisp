@@ -39,6 +39,28 @@
     (assert-equal (child joint) link)
     (assert-true (member joint (to-joints parent-link)))))
 
+(defun test-remove-link (robot link-name)
+  (let* ((link (gethash link-name (links robot))))
+      (assert-true link)
+      (when link
+        (remove-link robot link-name)
+        (assert-false (gethash link-name (links robot)))
+        (assert-false (gethash (name (from-joint link)) (joints robot)))
+        (assert-false (member (from-joint link) (to-joints (parent (from-joint link))))))))
+        ;(test-removed-to-joints link)))))
+
+(defun test-replace-link (robot link)
+  (let ((old-link (gethash (name link) (links robot)))
+        (return-value (replace-link robot link)))
+    (unless old-link
+      (assert-false return-value))
+    (when old-link
+      (assert-equal (nth-value 0 (gethash (name link) (links robot)))
+                    link)
+      (assert-equal (from-joint old-link) (from-joint link))
+      (assert-true (every (lambda (joint) (member joint (to-joints link)))
+                          (to-joints old-link))))))
+  
 
 (define-test simple-robot-add-link
   (let ((robot (load-robot "simple_robot.urdf"))
@@ -47,3 +69,21 @@
                               :parent-name "link2"
                               :child-name "link3")))
     (test-add-link robot link joint)))
+
+(define-test simple-robot-remove-link
+  (let ((robot (load-robot "simple_robot.urdf")))
+    (test-remove-link robot "link2")))
+
+(define-test pr2-remove-link
+  (let ((robot (load-robot "pr2.urdf")))
+    (test-remove-link robot "r_elbow_flex_link")))
+
+(define-test simple-robot-replace-link
+  (let ((robot (load-robot "simple_robot.urdf"))
+        (link (make-instance 'link :name "link2")))
+    (test-replace-link robot link)))
+
+(define-test pr2-replace-link
+  (let ((robot (load-robot "pr2.urdf"))
+        (link (make-instance 'link :name "r_elbow_flex_link")))
+    (test-replace-link robot link)))
