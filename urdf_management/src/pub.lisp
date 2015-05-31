@@ -26,28 +26,18 @@
 ;;; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ;;; POSSIBILITY OF SUCH DAMAGE.
 
-(defsystem urdf-management
-  :author "Jannik Buckelo <jannikbu@cs.uni-bremen.de>"
-  :licence "BSD"
+(in-package :urdf-management)
 
-  :depends-on (:cl-transforms
-               :cl-urdf
-               :roslisp
-               :alexandria
-               :iai_urdf_msgs-srv
-               :std_msgs-msg
-               :s-xml)
-  :components
-  ((:module "src"
-    :components
-    ((:file "package")
-;;     (:file "parameters" :depends-on ("package"))
-     (:file "update" :depends-on ("package"))
-     (:file "attach-urdf" :depends-on ("package"))
-;;     (:file "tree" :depends-on ("package"))
-     (:file "add" :depends-on ("package"))
-     (:file "remove" :depends-on ("package"))
-     (:file "pub" :depends-on ("package"))))))
-;;     (:file "service" :depends-on ("package" "add" "remove" "tree" "parameters"))
-;;     (:file "parameter-service" :depends-on ("package" "parameters"))
-;;     (:file "urdf-service" :depends-on ("package" "parameters" "attach-urdf"))))))
+(defun publish-urdf (robot &key (topic "/dynamic_robot_description") pub)
+  "Publishes the urdf of the `robot' as a string message on a latched topic."
+  (unless (eql (node-status) :running)
+    (start-ros-node "urdf_management" :anonymous t))
+  (let ((pub (if pub pub (advertise topic 'std_msgs-msg:String :latch t))))
+    (publish-msg pub :data (generate-urdf-string robot))
+    pub))
+
+(defun upload-urdf (robot &optional (param "robot_description"))
+  "Uploads the urdf of the `robot' to the parameter server."
+  (unless (eql (node-status) :running)
+    (start-ros-node "urdf_management" :anonymous t))
+  (set-param param (generate-urdf-string robot)))

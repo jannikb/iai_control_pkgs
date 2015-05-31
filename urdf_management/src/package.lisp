@@ -37,11 +37,5 @@
            remove-link
            replace-link
            replace-joint
-           ;; old exports might change
-           alter-urdf-service
-           call-alter-urdf
-           start-urdf-management
-           start-simple-service
-           urdf-alter-urdf-service
-           start-urdf-service
-           urdf-to-attach))
+           upload-urdf
+           publish-urdf))

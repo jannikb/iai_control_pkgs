@@ -42,12 +42,11 @@
                (not (gethash (name joint) (joints robot)))
                (not (gethash (name link) (links robot)))
                (gethash (parent-name joint) (links robot)))
-    (format t "early exit2")
     (return-from add-link nil))
   ;; Add link and joint
   (setf (gethash (name link) (links robot)) link)
   (setf (gethash (name joint) (joints robot)) joint)
-  ;; Set other propoerties of the link and joint
+  ;; Set other properties of the link and joint
   (setf (from-joint link) joint)
   (setf (child joint) link)
   (let ((parent-link (gethash (parent-name joint) (links robot))))

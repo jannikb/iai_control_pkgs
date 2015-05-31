@@ -1,4 +1,0 @@
-<launch>
-  <include file="$(find loopback_controller_manager_examples)/launch/pr2_all_controllers_simulation_dynamic_state.launch" />
-  <include file="$(find urdf_management)/launch/urdf_management.launch" />
-</launch>

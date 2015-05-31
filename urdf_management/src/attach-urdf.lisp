@@ -75,74 +75,42 @@
 
 (defmethod make-link-root ((robot-model robot) (link-name string))
   "Makes the link of the `robot-model' with the name `link-name' the root link of the robot."
-  (make-link-root robot-model (gethash link-name (links robot-model))))
+  (let ((link (gethash link-name (links robot-model))))
+    (unless link
+      (ros-warn (urdf-management) "Link ~a not found." link-name)
+      (return-from make-link-root nil))
+    (make-link-root robot-model link)))
 
 (defmethod make-link-root ((robot-model robot) (link link))
   "Makes the `link' the root link of the `robot-model'. `link' has to be a part of `robot-model'."
   (when (from-joint link)
-    (swap-child-with-parent (from-joint link))
+    (let ((links-to-root nil)
+          (current-link link))
+      ;; get the links from the new root link to the old one
+      (loop while (from-joint current-link)
+            do (push current-link links-to-root)
+               (setf current-link (parent (from-joint current-link))))
+      (mapcar #'make-temp-root links-to-root)
+      (setf (root-link robot-model) link)))
+  robot-model)
+
+(defun make-temp-root (link)
+  "Works under the implication that the parent of `link' is the root link"
+  (let* ((joint (from-joint link))
+         (old-root (parent joint)))
+    (setf (from-joint old-root) joint)
     (setf (from-joint link) nil)
-    (setf (root-link robot-model) link)))
+    (setf (to-joints old-root)
+          (remove joint (to-joints old-root)))
+    (setf (to-joints link) (cons joint (to-joints link)))
+    (setf (parent joint) link)
+    (setf (child joint) old-root)
+    (setf (parent-name joint) (name link))
+    (setf (child-name joint) (name old-root))
+    (setf (origin joint)
+          (cl-transforms:transform-inv (origin joint))))
+    link))
 
-(defun swap-child-with-parent (child-joint)
-  (let* ((link (parent child-joint))
-         (parent-joint (from-joint link)))
-    (when parent-joint
-      (setf (parent parent-joint) link)
-      (setf (parent-name parent-joint) (name link))
-      (setf (to-joints link)
-            (cons parent-joint (to-joints link))))
-
-    (swap-child-with-parent parent-joint)
-    (inverse-joint-transformation parent-joint child-joint)
-    (setf (child child-joint) link)
-    (setf (child-name child-joint) (name link))
-    (setf (from-joint link) child-joint)
-    (setf (to-joints link)
-          (remove child-joint (to-joints link)))))
-    
-(defun inverse-joint-transformation (parent child)
-  "`parent' is the parent joint of `child'. The transform from `parent' will be removed
-and `child' gets a transform that is the inverse of it."
-  (let* ((rot-mat (matrix->rotation-matrix (cl-transforms:transform->matrix (origin parent))))
-         (inv-rot-mat (cl-transforms:invert-rot-matrix rot-mat))
-         (inv-trans ))
-    (setf (origin child)
-          (cl-transforms:make-transform
-           inv-trans (cl-transforms:matrix->quaternion inv-rot-mat)))))
-          
-(defun inverse-translation (translation inv-rot-mat)
-  (let ((neg-trans (cl-transforms:make-3d-vector (- (x translation))
-                                                 (- (y translation))
-                                                 (- (z translation)))))
-    (rot-matrix*3d-vector inv-rot-mat
-                          neg-trans)))
-
-(defun matrix->rotation-matrix (matrix)
-  (make-array '(3 3)
-              :initial-contents (loop for y from 0 below 3
-                                      collecting (loop for x from 0 below 3
-                                                       collecting (aref matrix y x)))))
-
-(defun rot-matrix*3d-vector (matrix v)
-  (cl-transforms:make-3d-vector (+ (* (aref matrix 0 0) (x v))
-                                   (* (aref matrix 0 1) (x v))
-                                   (* (aref matrix 0 2) (x v)))
-                                (+ (* (aref matrix 1 0) (y v))
-                                   (* (aref matrix 1 1) (y v))
-                                   (* (aref matrix 1 2) (y v)))
-                                (+ (* (aref matrix 2 0) (z v))
-                                   (* (aref matrix 2 1) (z v))
-                                   (* (aref matrix 2 2) (z v)))))
-
-(defun x (v)
-  (cl-transforms:x v))
-
-(defun y (v)
-  (cl-transforms:y v))
-
-(defun z (v)
-  (cl-transforms:z v))
   
 (defun attach-robot (base-robot robot-to-attach joint &optional prefix)
   "Attaches the `robot-to-attach' to the `base-robot'. The `joint' is used to connect those to robots and if necessary the child of the joint will be made the root link of `robot-to-attach'. Optionally the `prefix' will be added to all the joints and links of the `robot-to-attach'."
@@ -156,7 +124,9 @@ and `child' gets a transform that is the inverse of it."
     (when prefix
       (add-prefix robot-to-attach prefix))
     ;; Make the link that gets connected to the robot root
-    (make-link-root robot-to-attach (child-name joint))
+    (unless (make-link-root robot-to-attach (subseq (child-name joint) (length prefix)))
+      (ros-error (urdf_management) "Attaching failed.")
+      (return-from attach-robot nil))
     ;; Add the links and joints to the robot
     (maphash #'add-joint-helper (joints robot-to-attach))
     (maphash #'add-link-helper (links robot-to-attach))
@@ -168,28 +138,4 @@ and `child' gets a transform that is the inverse of it."
           (gethash (child-name joint) (links base-robot))))
   base-robot)
 
-
-
-(defun urdf-to-attach (urdf-path joint-string &optional prefix)
-  "Returns a string of urdf description with the description of `joint-string' added 
-and all link and joint names have `prefix' added before them.")
-  ;; (let ((urdf-xml (read-urdf-xml urdf-path))
-    ;;     (joint-xml (s-xml:parse-xml-string joint-string :output-type :xml-struct)))
-    ;; (when prefix
-    ;;   ;; Add prefixes to the joint that connects the new urdf with the robot
-    ;;   ;; except the parent of that joint
-    ;;   (add-prefix-name joint-xml prefix)
-    ;;   (add-prefix-to-joint-elements joint-xml :|child| prefix)
-    ;;   ;; Add prefixes to the joints and links of the urdf
-    ;;   (dolist (child (s-xml:xml-element-children urdf-xml))
-    ;;     (case (s-xml:xml-element-name child)
-    ;;       (:|link| (add-prefix-name child prefix))
-    ;;       (:|joint| (add-prefix-joint child prefix)))))
-    ;; ;; Make the link that should be connected root
-    ;; (make-link-root (s-xml:xml-element-attribute
-    ;;                  (cl-urdf::xml-element-child joint-xml :|child|) :|link|)
-    ;;                 urdf-xml)
-    ;; ;; Add the xml of the connector joint to the urdf xml
-    ;; (push joint-xml (s-xml:xml-element-children urdf-xml))
-    ;; (s-xml:print-xml-string urdf-xml :input-type :xml-struct)))
 
