@@ -109,7 +109,7 @@
     (setf (child-name joint) (name old-root))
     (setf (origin joint)
           (cl-transforms:transform-inv (origin joint))))
-    link))
+  link)
 
   
 (defun attach-robot (base-robot robot-to-attach joint &optional prefix)
