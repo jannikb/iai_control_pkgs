@@ -110,7 +110,6 @@
     (setf (origin joint)
           (cl-transforms:transform-inv (origin joint))))
   link)
-
   
 (defun attach-robot (base-robot robot-to-attach joint &optional prefix)
   "Attaches the `robot-to-attach' to the `base-robot'. The `joint' is used to connect those to robots and if necessary the child of the joint will be made the root link of `robot-to-attach'. Optionally the `prefix' will be added to all the joints and links of the `robot-to-attach'."

@@ -33,32 +33,33 @@
   (cl-urdf:parse-urdf (pathname (format nil "test_urdfs/~a" name))))
 
 (defun test-add-link (robot link joint)
-  (let ((parent-link (gethash (parent-name joint) (links robot))))
-    (add-link robot link joint)
-    (assert-equal (from-joint link) joint)
-    (assert-equal (child joint) link)
-    (assert-true (member joint (to-joints parent-link)))))
+  (let* ((new-robot (add-link robot link joint))
+         (new-link (gethash (name link) new-robot))
+         (new-joint (gethash (name joint) new-robot)))
+    (assert-equal (from-joint new-link) new-joint)
+    (assert-equal (child new-joint) new-link)
+    (assert-true (member joint (parent joint)))))
 
 (defun test-remove-link (robot link-name)
-  (let* ((link (gethash link-name (links robot))))
-      (assert-true link)
-      (when link
-        (remove-link robot link-name)
-        (assert-false (gethash link-name (links robot)))
-        (assert-false (gethash (name (from-joint link)) (joints robot)))
-        (assert-false (member (from-joint link) (to-joints (parent (from-joint link))))))))
-        ;(test-removed-to-joints link)))))
+  (let* ((old-link (gethash link-name (links robot)))
+         (joint-name (name (from-joint old-link)))
+         (parent-name (parent-name (from-joint old-link)))
+         (new-robot (remove-link robot link-name)))
+    (assert-false (gethash link-name (links new-robot)))
+    (assert-false (gethash (name (from-joint old-link)) (joints new-robot)))
+    (assert-false (member joint-name (to-joints (gethash parent-name (links new-robot)))
+                          :key #'name :test #'equal))))
 
-(defun test-replace-link (robot link)
-  (let ((old-link (gethash (name link) (links robot)))
-        (return-value (replace-link robot link)))
+
+(defun test-replace-link (robot old-link-name new-link)
+  (let ((old-link (gethash old-link-name (links robot)))
+        (new-robot (replace-link robot old-link-name new-link)))
     (unless old-link
-      (assert-false return-value))
+      (assert-false new-robot))
     (when old-link
-      (assert-equal (nth-value 0 (gethash (name link) (links robot)))
-                    link)
-      (assert-equal (from-joint old-link) (from-joint link))
-      (assert-true (every (lambda (joint) (member joint (to-joints link)))
+      (assert-true (gethash (name new-link) (links new-robot)))
+      (assert-equal (from-joint old-link) (from-joint new-link))
+      (assert-true (every (lambda (joint) (member joint (to-joints new-link)))
                           (to-joints old-link))))))
   
 
@@ -81,9 +82,9 @@
 (define-test simple-robot-replace-link
   (let ((robot (load-robot "simple_robot.urdf"))
         (link (make-instance 'link :name "link2")))
-    (test-replace-link robot link)))
+    (test-replace-link robot "link2" link)))
 
 (define-test pr2-replace-link
   (let ((robot (load-robot "pr2.urdf"))
         (link (make-instance 'link :name "r_elbow_flex_link")))
-    (test-replace-link robot link)))
+    (test-replace-link robot "r_elbow_flex_link" link)))
