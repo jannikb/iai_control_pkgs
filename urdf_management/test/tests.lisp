@@ -34,11 +34,16 @@
 
 (defun test-add-link (robot link joint)
   (let* ((new-robot (add-link robot link joint))
-         (new-link (gethash (name link) new-robot))
-         (new-joint (gethash (name joint) new-robot)))
+         (new-link (gethash (name link) (links new-robot)))
+         (new-joint (gethash (name joint) (joints new-robot))))
     (assert-equal (from-joint new-link) new-joint)
     (assert-equal (child new-joint) new-link)
-    (assert-true (member joint (parent joint)))))
+    (assert-true (member new-joint (to-joints (parent new-joint))))))
+
+(defun test-add-links (robot links joints)
+  (let ((new-robot (add-links robot links joints)))
+    (dolist (link links)
+      (assert-true (gethash (name link) (links new-robot))))))
 
 (defun test-remove-link (robot link-name)
   (let* ((old-link (gethash link-name (links robot)))
@@ -51,25 +56,62 @@
                           :key #'name :test #'equal))))
 
 
-(defun test-replace-link (robot old-link-name new-link)
-  (let ((old-link (gethash old-link-name (links robot)))
-        (new-robot (replace-link robot old-link-name new-link)))
+(defun test-replace-link (robot old-link-name link)
+  (let* ((old-link (gethash old-link-name (links robot)))
+         (new-robot (replace-link robot old-link-name link))
+         (new-link (gethash (name link) (links new-robot))))
     (unless old-link
       (assert-false new-robot))
     (when old-link
-      (assert-true (gethash (name new-link) (links new-robot)))
-      (assert-equal (from-joint old-link) (from-joint new-link))
-      (assert-true (every (lambda (joint) (member joint (to-joints new-link)))
+      (assert-true new-link)
+      (assert-equal (name (from-joint old-link))
+                    (name (from-joint new-link)))
+      (assert-true (every (lambda (joint) (member (name joint) (to-joints new-link)
+                                                  :key #'name :test #'equal))
                           (to-joints old-link))))))
-  
+
+(defun make-simple-joint (name parent child)
+  (make-instance 'joint :name name
+                        :parent-name parent
+                        :child-name child))
 
 (define-test simple-robot-add-link
   (let ((robot (load-robot "simple_robot.urdf"))
         (link (make-instance 'link :name "link3"))
-        (joint (make-instance 'joint :name "joint2"
-                              :parent-name "link2"
-                              :child-name "link3")))
+        (joint (make-simple-joint "joint2" "link2" "link3")))
     (test-add-link robot link joint)))
+
+(define-test simple-robot-add-links1
+  (let ((robot (load-robot "simple_robot.urdf"))
+        (links (list (make-instance 'link :name "link3")))
+        (joints (list (make-simple-joint "joint2" "link2" "link3"))))
+    (test-add-links robot links joints)))
+
+(define-test simple-robot-add-links2
+  (let ((robot (load-robot "simple_robot.urdf"))
+        (links (list (make-instance 'link :name "link3")
+                     (make-instance 'link :name "link4")))
+        (joints (list (make-simple-joint "joint2" "link2" "link3")
+                      (make-simple-joint "joint3" "link3" "link4"))))
+    (test-add-links robot links joints)))
+
+(define-test simple-robot-add-links3
+  (let ((robot (load-robot "simple_robot.urdf"))
+        (links (list (make-instance 'link :name "link4")
+                     (make-instance 'link :name "link3")))
+        (joints (list (make-simple-joint "joint3" "link3" "link4")
+                      (make-simple-joint "joint2" "link2" "link3"))))
+    (test-add-links robot links joints)))
+
+(define-test simple-robot-add-links3
+  (let ((robot (load-robot "simple_robot.urdf"))
+        (links (list (make-instance 'link :name "link4")
+                     (make-instance 'link :name "link3")
+                     (make-instance 'link :name "link5")))
+        (joints (list (make-simple-joint "joint4" "link3" "link5")
+                      (make-simple-joint "joint2" "link1" "link4")
+                      (make-simple-joint "joint3" "link2" "link3"))))
+    (test-add-links robot links joints)))
 
 (define-test simple-robot-remove-link
   (let ((robot (load-robot "simple_robot.urdf")))

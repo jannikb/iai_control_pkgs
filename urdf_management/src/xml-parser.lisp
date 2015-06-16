@@ -26,21 +26,32 @@
 ;;; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ;;; POSSIBILITY OF SUCH DAMAGE.
 
-(in-package :cl-user)
+(in-package :urdf-management)
 
-(defpackage urdf-management
-  (:use #:common-lisp
-        #:roslisp
-        #:cl-urdf
-        #:iai_urdf_msgs-srv)
-  (:export add-link
-           add-links
-           remove-link
-           replace-link
-           replace-joint
-           add-links!
-           remove-link!
-           replace-link!
-           replace-joint!
-           upload-urdf
-           publish-urdf))
+(defun xml->links-joints (xml-string)
+  (let ((parsed-xml (parse-xml-string xml-string))
+        (link-descriptions nil)
+        (joint-descriptions nil))
+    (dolist (child (s-xml:xml-element-children parsed-xml))
+      (case (s-xml:xml-element-name child)
+        (:|link| (push child link-descriptions))
+        (:|joint| (push child joint-descriptions))
+        (otherwise         
+         (ros-warn (urdf-management) 
+                   "Ignoring element: ~a" child))))
+    (values (mapcar (lambda (link-desc) (xml-element->link link-desc)) link-descriptions)
+            (mapcar (lambda (joint-desc) (xml-element->joint joint-desc)) joint-descriptions))))
+
+(defun xml-element->link (xml-element)
+  (cl-urdf::parse-xml-node :|link| xml-element))
+
+(defun xml-element->joint (xml-element)
+  (cl-urdf::parse-xml-node :|joint| xml-element))
+
+(defun parse-xml-string (xml)
+  (let* ((parsed (s-xml:parse-xml-string (format nil "<container>~a</container>" xml)
+                                        :output-type :xml-struct))
+         (first-child (s-xml:first-xml-element-child parsed)))
+    (if (and first-child (eql (s-xml:xml-element-name first-child) :|robot|))
+        first-child
+        parsed)))

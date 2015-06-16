@@ -41,13 +41,9 @@
   ((:module "src"
     :components
     ((:file "package")
-;;     (:file "parameters" :depends-on ("package"))
+     (:file "xml-parser" :depends-on ("package"))
      (:file "update" :depends-on ("package"))
      (:file "attach-urdf" :depends-on ("package"))
-;;     (:file "tree" :depends-on ("package"))
      (:file "add" :depends-on ("package"))
      (:file "remove" :depends-on ("package"))
      (:file "pub" :depends-on ("package"))))))
-;;     (:file "service" :depends-on ("package" "add" "remove" "tree" "parameters"))
-;;     (:file "parameter-service" :depends-on ("package" "parameters"))
-;;     (:file "urdf-service" :depends-on ("package" "parameters" "attach-urdf"))))))

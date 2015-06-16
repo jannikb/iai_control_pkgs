@@ -32,35 +32,47 @@
   (:documentation "ad"))
 
 (defmethod add-link! ((robot robot) (link link) (joint joint))
-  (unless (and (equal (child-name joint) (name link))
+  (when (and (equal (child-name joint) (name link))
                (not (gethash (name joint) (joints robot)))
                (not (gethash (name link) (links robot)))
                (gethash (parent-name joint) (links robot)))
-    (return-from add-link! nil))
-  ;; Add link and joint
-  (setf (gethash (name link) (links robot)) link)
-  (setf (gethash (name joint) (joints robot)) joint)
-  ;; Set other properties of the link and joint
-  (setf (from-joint link) joint)
-  (setf (child joint) link)
-  (let ((parent-link (gethash (parent-name joint) (links robot))))
-    (setf (parent joint) parent-link)
-    (setf (to-joints parent-link) (cons joint (to-joints parent-link))))
-  robot)
+    ;; Add link and joint
+    (setf (gethash (name link) (links robot)) link)
+    (setf (gethash (name joint) (joints robot)) joint)
+    ;; Set other properties of the link and joint
+    (setf (from-joint link) joint)
+    (setf (child joint) link)
+    (let ((parent-link (gethash (parent-name joint) (links robot))))
+      (setf (parent joint) parent-link)
+      (setf (to-joints parent-link) (cons joint (to-joints parent-link))))
+    robot))
 
 (defun add-link (robot link joint)
   (add-link! (copy-object robot) (copy-object link) (copy-object joint)))
 
-(defun parse-xml-string (xml)
-  (let* ((parsed (s-xml:parse-xml-string (format nil "<container>~a</container>" xml)
-                                        :output-type :xml-struct))
-         (first-child (s-xml:first-xml-element-child parsed)))
-    (if (and first-child (eql (s-xml:xml-element-name first-child) :|robot|))
-        first-child
-        parsed)))
-  
+(defun add-links! (robot links joints)
+  (let ((joint-backlog nil)
+        (prev-backlog-length (1+ (length joints))))
+    (loop while (and joints
+                     (< (length joints) prev-backlog-length))
+          do
+             (setf prev-backlog-length (length joints))
+             (loop while joints do
+               (let* ((joint (pop joints))
+                      (parent (gethash (parent-name joint) (links robot))))
+                 (when parent
+                   (let ((link (find (child-name joint) links :key #'name :test #'equal)))
+                     (when link
+                       (add-link! robot link joint))
+                     (unless link
+                       (ros-warn (urdf_management) "Link ~a not found." (child-name joint)))))
+                 (unless parent
+                   (push joint joint-backlog))))
+             (setf joints joint-backlog)
+             (setf joint-backlog nil))
+    robot))
 
-(defun create-link (link-desc robot)
-  "Parses the xml description of the link. If it's a valid link the link is returned else nil."
-  (let ((link (cl-urdf::parse-xml-node :|link| link-desc robot)))
-    link))
+(defun add-links (robot links joints)
+  (add-links! (copy-object robot)
+              (copy-object links)
+              (copy-object joints)))

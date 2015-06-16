@@ -29,7 +29,6 @@
 (in-package :urdf-management)
 
 (defvar *robot-model* nil)
-(defvar *parent-link-tree* nil)
 (defvar *urdf-pub* nil)
 
 (defun start-urdf-management ()
@@ -46,11 +45,8 @@
 (defun callback-handler (action add remove)
   (cond
     ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
-     (multiple-value-bind (succ tree)
-         (add-to-robot add *robot-model* *parent-link-tree*)
-       (when succ 
-         (setf *parent-link-tree* tree)
-         t)))
+     (multiple-value-bind (links joints) (xml->links-joints add)
+       (add-links! *robot-model* links joints)))
     ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
      (multiple-value-bind (succ tree) 
          (remove-from-robot (coerce remove 'list) *robot-model* *parent-link-tree*)
@@ -61,7 +57,6 @@
 (defun alter-urdf-service ()
   "Registers the service to alter the robot description."
   (setf *robot-model* (parse-urdf (get-param "robot_description" *default-description*)))
-  (setf *parent-link-tree* (get-tree *robot-model*))
   (setf *urdf-pub* (advertise "/dynamic_robot_description" 'std_msgs-msg:String :latch t))
   (publish-urdf)
   (register-service *main-service-name* 'AlterUrdf)
