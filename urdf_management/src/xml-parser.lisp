@@ -42,6 +42,12 @@
     (values (mapcar (lambda (link-desc) (xml-element->link link-desc)) link-descriptions)
             (mapcar (lambda (joint-desc) (xml-element->joint joint-desc)) joint-descriptions))))
 
+(defun xml->joint (xml-string)
+  (let* ((xml-struct (parse-xml-string xml-string))
+         (first-child  (s-xml:first-xml-element-child xml-struct)))
+    (when (eql (s-xml:xml-element-name first-child) :|joint|)
+      (xml-element->joint first-child))))
+
 (defun xml-element->link (xml-element)
   (cl-urdf::parse-xml-node :|link| xml-element))
 

@@ -29,6 +29,7 @@
 (in-package :urdf-management)
 
 (defvar *robot-model* nil)
+(defvar *robot-mutex* (make-mutex))
 (defvar *urdf-pub* nil)
 
 (defun start-urdf-management ()
@@ -45,14 +46,14 @@
 (defun callback-handler (action add remove)
   (cond
     ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
+     (ros-info (urdf-management) "Adding to robot model")
      (multiple-value-bind (links joints) (xml->links-joints add)
-       (add-links! *robot-model* links joints)))
+       (with-recursive-lock (*robot-mutex*)
+         (add-links! *robot-model* links joints))))
     ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
-     (multiple-value-bind (succ tree) 
-         (remove-from-robot (coerce remove 'list) *robot-model* *parent-link-tree*)
-       (when succ
-         (setf *parent-link-tree* tree)
-         t)))))
+     (ros-info (urdf-management) "Removing from robot model")
+     (with-recursive-lock (*robot-mutex*)
+       (remove-links! *robot-model* (coerce remove 'list))))))
 
 (defun alter-urdf-service ()
   "Registers the service to alter the robot description."
@@ -61,10 +62,27 @@
   (publish-urdf)
   (register-service *main-service-name* 'AlterUrdf)
   (ros-info (urdf-management) "Ready to alter urdf."))
-  
+
+(def-service-callback UrdfAlterUrdf (action urdf joint_description prefix)
+  (cond
+    ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
+     (ros-info (urdf-management) "Adding urdf to robot description.")
+     (with-recursive-lock (*robot-mutex*)
+       (attach-robot! *robot-model* (read-urdf-xml urdf) (xml->joint joint_description) prefix))
+     (make-response :success t))
+    ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
+     (make-response :success t))
+    (t (ros-error (urdf-management simple-service) "Action ~a undefined." action)
+       (make-response :success nil))))
+
+(defun urdf-alter-urdf-service ()
+  "Registers the service to alter the robot description."
+  (register-service *urdf-service-name* 'UrdfAlterUrdf))
+
 (defun publish-urdf ()
   "Generates an urdf description from the robot model and publishes it."
-  (publish-msg *urdf-pub* :data (generate-urdf-string *robot-model*)))
+  (with-recursive-lock (*robot-mutex*)
+    (publish-msg *urdf-pub* :data (generate-urdf-string *robot-model*))))
 
 (defun call-alter-urdf (action add remove &optional (timeout 5))
   "Calls the service alter_urdf with `action', `add' and `remove' as parameters."

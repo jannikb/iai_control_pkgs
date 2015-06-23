@@ -111,7 +111,7 @@
           (cl-transforms:transform-inv (origin joint))))
   link)
   
-(defun attach-robot (base-robot robot-to-attach joint &optional prefix)
+(defun attach-robot! (base-robot robot-to-attach joint &optional prefix)
   "Attaches the `robot-to-attach' to the `base-robot'. The `joint' is used to connect those to robots and if necessary the child of the joint will be made the root link of `robot-to-attach'. Optionally the `prefix' will be added to all the joints and links of the `robot-to-attach'."
   (flet ((add-link-helper (key link)
            (declare (ignore key))
@@ -120,21 +120,21 @@
            (declare (ignore key))
            (setf (gethash (name joint) (joints base-robot)) joint)))
     ;; Add the prefix if given
-    (when prefix
+    (when (and prefix (= (length prefix) 0))
       (add-prefix robot-to-attach prefix))
     ;; Make the link that gets connected to the robot root
-    (unless (make-link-root robot-to-attach (subseq (child-name joint) (length prefix)))
-      (ros-error (urdf_management) "Attaching failed.")
-      (return-from attach-robot nil))
-    ;; Add the links and joints to the robot
-    (maphash #'add-joint-helper (joints robot-to-attach))
-    (maphash #'add-link-helper (links robot-to-attach))
-    ;; Set the parent and child fields of the connecting joint
-    (add-joint-helper 0 joint)
-    (setf (parent joint)
-          (gethash (parent-name joint) (links base-robot)))
-    (setf (child joint)
-          (gethash (child-name joint) (links base-robot))))
-  base-robot)
+    (when (make-link-root robot-to-attach (subseq (child-name joint) (length prefix)))
+      ;; Add the links and joints to the robot
+      (maphash #'add-joint-helper (joints robot-to-attach))
+      (maphash #'add-link-helper (links robot-to-attach))
+      ;; Set the parent and child fields of the connecting joint
+      (add-joint-helper 0 joint)
+      (setf (parent joint)
+            (gethash (parent-name joint) (links base-robot)))
+      (setf (child joint)
+            (gethash (child-name joint) (links base-robot)))
+      base-robot)))
 
+(defun attach-robot (base-robot robot-to-attach joint &optional prefix)
+  (attach-robot! (copy-object base-robot) robot-to-attach joint prefix))
 

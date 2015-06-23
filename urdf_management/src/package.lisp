@@ -30,17 +30,21 @@
 
 (defpackage urdf-management
   (:use #:common-lisp
+        #:sb-thread
         #:roslisp
         #:cl-urdf
         #:iai_urdf_msgs-srv)
   (:export add-link
            add-links
            remove-link
+           remove-links
            replace-link
            replace-joint
+           attach-robot
+           add-link!
            add-links!
+           remove-links!
            remove-link!
            replace-link!
            replace-joint!
-           upload-urdf
-           publish-urdf))
+           attach-robot!))

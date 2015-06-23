@@ -46,4 +46,6 @@
      (:file "attach-urdf" :depends-on ("package"))
      (:file "add" :depends-on ("package"))
      (:file "remove" :depends-on ("package"))
-     (:file "pub" :depends-on ("package"))))))
+;;     (:file "pub" :depends-on ("package"))
+     (:file "parameters" :depends-on ("package"))
+     (:file "service" :depends-on ("package" "parameters" "add" "remove" "update" "attach-urdf" "xml-parser"))))))

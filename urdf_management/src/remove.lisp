@@ -47,4 +47,12 @@
   (remove-link robot (name link)))
 
 (defun remove-link (robot link)
-  (remove-link! (copy-object robot) (copy-object link)))
+  (remove-link! (copy-object robot) link))
+
+(defun remove-links! (robot links)
+  (dolist (link links)
+    (remove-link! robot link))
+  t)
+
+(defun remove-links (robot links)
+  (remove-links! (copy-object robot) links))

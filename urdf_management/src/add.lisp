@@ -58,6 +58,9 @@
           do
              (setf prev-backlog-length (length joints))
              (loop while joints do
+               (unless (and (parent-name (car joints)) (child-name (car joints)))
+                 (ros-error (urdf-management) "Malformed joint: No parent or child name.")
+                 (return-from add-links! nil))
                (let* ((joint (pop joints))
                       (parent (gethash (parent-name joint) (links robot))))
                  (when parent
