@@ -32,21 +32,23 @@
   (let ((parsed-xml (parse-xml-string xml-string))
         (link-descriptions nil)
         (joint-descriptions nil))
-    (dolist (child (s-xml:xml-element-children parsed-xml))
-      (case (s-xml:xml-element-name child)
-        (:|link| (push child link-descriptions))
-        (:|joint| (push child joint-descriptions))
-        (otherwise         
-         (ros-warn (urdf-management) 
-                   "Ignoring element: ~a" child))))
-    (values (mapcar (lambda (link-desc) (xml-element->link link-desc)) link-descriptions)
-            (mapcar (lambda (joint-desc) (xml-element->joint joint-desc)) joint-descriptions))))
+    (when parsed-xml
+      (dolist (child (s-xml:xml-element-children parsed-xml))
+        (case (s-xml:xml-element-name child)
+          (:|link| (push child link-descriptions))
+          (:|joint| (push child joint-descriptions))
+          (otherwise         
+           (ros-warn (urdf-management)
+                     "Ignoring element: ~a" child))))
+      (values (mapcar (lambda (link-desc) (xml-element->link link-desc)) link-descriptions)
+              (mapcar (lambda (joint-desc) (xml-element->joint joint-desc)) joint-descriptions)))))
 
 (defun xml->joint (xml-string)
-  (let* ((xml-struct (parse-xml-string xml-string))
-         (first-child  (s-xml:first-xml-element-child xml-struct)))
-    (when (eql (s-xml:xml-element-name first-child) :|joint|)
-      (xml-element->joint first-child))))
+  (let ((xml-struct (parse-xml-string xml-string)))
+    (when xml-struct
+      (let ((first-child  (s-xml:first-xml-element-child xml-struct)))
+        (when (eql (s-xml:xml-element-name first-child) :|joint|)
+          (xml-element->joint first-child))))))
 
 (defun xml-element->link (xml-element)
   (cl-urdf::parse-xml-node :|link| xml-element))
@@ -55,9 +57,13 @@
   (cl-urdf::parse-xml-node :|joint| xml-element))
 
 (defun parse-xml-string (xml)
-  (let* ((parsed (s-xml:parse-xml-string (format nil "<container>~a</container>" xml)
-                                        :output-type :xml-struct))
-         (first-child (s-xml:first-xml-element-child parsed)))
-    (if (and first-child (eql (s-xml:xml-element-name first-child) :|robot|))
-        first-child
-        parsed)))
+  (handler-case
+      (let* ((parsed (s-xml:parse-xml-string (format nil "<container>~a</container>" xml)
+                                             :output-type :xml-struct))
+             (first-child (s-xml:first-xml-element-child parsed)))
+        (if (and first-child (eql (s-xml:xml-element-name first-child) :|robot|))
+            first-child
+            parsed))
+    (s-xml:xml-parser-error ()
+      (prog1 nil
+        (ros-error (urdf-management) "Failed to parse: ~a~%" xml)))))

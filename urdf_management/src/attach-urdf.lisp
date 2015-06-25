@@ -37,12 +37,13 @@
 (defun read-urdf-xml (urdf-path)
   "Gets a path to an urdf that can either be an absolute path or a ros path
  and returns a xml-struct of it."
-  (let* ((absolute-p (eql (first (pathname-directory urdf-path)) :absolute))
-         (urdf-file (if absolute-p
-                        urdf-path
-                        (ros-path->absolute-path urdf-path))))
-    (s-xml:parse-xml-file urdf-file :output-type :xml-struct)))
+  (s-xml:parse-xml-file (get-absolute-path urdf-path) :output-type :xml-struct)))
 
+(defun get-absolute-path (path)
+  (if (eql (first (pathname-directory path)) :absolute)
+      path
+      (ros-path->absolute-path path)))
+  
 (defun ros-path->absolute-path (ros-path)
   "Converts a ros-path of the form '<ros-pkg-name>/rest/of/the.path' to an absolute path."
   (let* ((pkg-name (second (pathname-directory ros-path)))
@@ -123,7 +124,9 @@
     (when (and prefix (= (length prefix) 0))
       (add-prefix robot-to-attach prefix))
     ;; Make the link that gets connected to the robot root
+    (format t "asdasdasd")
     (when (make-link-root robot-to-attach (subseq (child-name joint) (length prefix)))
+      (format t "asdasdasd")
       ;; Add the links and joints to the robot
       (maphash #'add-joint-helper (joints robot-to-attach))
       (maphash #'add-link-helper (links robot-to-attach))
