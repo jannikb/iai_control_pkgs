@@ -37,7 +37,7 @@
 (defun read-urdf-xml (urdf-path)
   "Gets a path to an urdf that can either be an absolute path or a ros path
  and returns a xml-struct of it."
-  (s-xml:parse-xml-file (get-absolute-path urdf-path) :output-type :xml-struct)))
+  (s-xml:parse-xml-file (get-absolute-path urdf-path) :output-type :xml-struct))
 
 (defun get-absolute-path (path)
   (if (eql (first (pathname-directory path)) :absolute)
@@ -116,22 +116,26 @@
   "Attaches the `robot-to-attach' to the `base-robot'. The `joint' is used to connect those to robots and if necessary the child of the joint will be made the root link of `robot-to-attach'. Optionally the `prefix' will be added to all the joints and links of the `robot-to-attach'."
   (flet ((add-link-helper (key link)
            (declare (ignore key))
-           (setf (gethash (name link) (links base-robot)) link))
+           (setf (gethash (if prefix
+                              (add-prefix (name link) prefix)
+                              (name link))
+                          (links base-robot)) link))
          (add-joint-helper (key joint)
            (declare (ignore key))
-           (setf (gethash (name joint) (joints base-robot)) joint)))
+           (setf (gethash (if prefix
+                              (add-prefix (name joint) prefix)
+                              (name joint))
+                          (joints base-robot)) joint)))
     ;; Add the prefix if given
     (when (and prefix (= (length prefix) 0))
       (add-prefix robot-to-attach prefix))
     ;; Make the link that gets connected to the robot root
-    (format t "asdasdasd")
     (when (make-link-root robot-to-attach (subseq (child-name joint) (length prefix)))
-      (format t "asdasdasd")
       ;; Add the links and joints to the robot
       (maphash #'add-joint-helper (joints robot-to-attach))
       (maphash #'add-link-helper (links robot-to-attach))
       ;; Set the parent and child fields of the connecting joint
-      (add-joint-helper 0 joint)
+      (add-joint-helper nil joint)
       (setf (parent joint)
             (gethash (parent-name joint) (links base-robot)))
       (setf (child joint)
