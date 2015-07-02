@@ -47,4 +47,5 @@
            remove-link!
            replace-link!
            replace-joint!
-           attach-robot!))
+           attach-robot!
+           start-urdf-management))

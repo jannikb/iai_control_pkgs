@@ -32,33 +32,8 @@
   (with-ros-node ("urdf_management/simple_service" :spin t)
     (simple-alter-urdf-service)))
 
-(def-service-callback SimpleAlterUrdf (action parameter)
-  "Callback for the 'simple_alter_urdf' service."
-  (ros-info (urdf-management simple-service) "Altering robot description.")
-  (cond
-    ((eql action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :add))
-     (let ((description (get-param (concatenate 'string "urdf_management/" parameter) nil)))
-       (if description
-           (make-response :success (add-description description))
-           (progn
-             (ros-error (urdf-management simple-service)
-                        "~a not found on parameter server." parameter)
-             (make-response :success nil)))))
-    ((eql action (symbol-code 'iai_urdf_msgs-srv:simplealterurdf-request :remove))
-     (let ((description (get-param (concatenate 'string "urdf_management/" parameter) nil)))
-       (if description
-           (let ((links (when description (get-link-names description))))
-             (make-response :success (remove-links links)))
-           (progn    
-             (ros-error (urdf-management simple-service)
-                        "~a not found on parameter server." parameter)
-             (make-response :success nil)))))
-    (t (ros-error (urdf-management simple-service) "Action ~a undefined." action)
-       (make-response :success nil))))
 
-(defun simple-alter-urdf-service ()
-  "Registers the service."
-  (register-service *simple-service-name* 'SimpleAlterUrdf)
+
   (ros-info (urdf-management simple-service) "Ready to alter urdf."))
 
 (defun add-description (description)
