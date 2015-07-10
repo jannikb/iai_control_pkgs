@@ -4,7 +4,7 @@
   <arg name="model" default="$(find iai_sherpa_box)/urdf/box.urdf.xacro"/>
   <param name="robot_description" command="$(find xacro)/xacro.py '$(arg model)'" />
 
-  <include file="$(find urdf_management)/launch/urdf_management.launch" />
+  <node name="urdf_management" type="urdf_management.lisp" pkg="urdf_management" output="screen" />
   <include file="$(find dynamic_robot_state_publisher)/launch/dynamic_robot_state_publisher.launch" />
 
 </launch>

@@ -116,19 +116,17 @@
   "Attaches the `robot-to-attach' to the `base-robot'. The `joint' is used to connect those to robots and if necessary the child of the joint will be made the root link of `robot-to-attach'. Optionally the `prefix' will be added to all the joints and links of the `robot-to-attach'."
   (flet ((add-link-helper (key link)
            (declare (ignore key))
-           (setf (gethash (if prefix
-                              (add-prefix (name link) prefix)
-                              (name link))
+           (setf (gethash (name link)
                           (links base-robot)) link))
          (add-joint-helper (key joint)
            (declare (ignore key))
-           (setf (gethash (if prefix
-                              (add-prefix (name joint) prefix)
-                              (name joint))
+           (setf (gethash (name joint)
                           (joints base-robot)) joint)))
     ;; Add the prefix if given
-    (when (and prefix (= (length prefix) 0))
-      (add-prefix robot-to-attach prefix))
+    (when (and prefix (> (length prefix) 0))
+      (add-prefix robot-to-attach prefix)
+      (setf (child-name joint)
+            (add-prefix (child-name joint) prefix)))
     ;; Make the link that gets connected to the robot root
     (when (make-link-root robot-to-attach (subseq (child-name joint) (length prefix)))
       ;; Add the links and joints to the robot
@@ -140,8 +138,24 @@
             (gethash (parent-name joint) (links base-robot)))
       (setf (child joint)
             (gethash (child-name joint) (links base-robot)))
+      (setf (from-joint (child joint))
+            joint)
+      (setf (to-joints (parent joint))
+            (cons joint (to-joints (parent joint))))
       base-robot)))
 
 (defun attach-robot (base-robot robot-to-attach joint &optional prefix)
   (attach-robot! (copy-object base-robot) robot-to-attach joint prefix))
 
+
+(defun detach-robot! (base-robot robot-to-detach &optional prefix)
+  (flet ((remove-link-helper (key link)
+           (declare (ignore key))
+           (remove-link! base-robot (name link))))
+    (when (and prefix (> (length prefix) 0))
+      (add-prefix robot-to-detach prefix))
+    (maphash #'remove-link-helper (links robot-to-detach))
+    base-robot))
+
+(defun detach-robot (base-robot robot-to-detach &optional prefix)
+  (detach-robot! (copy-object base-robot) robot-to-detach prefix))

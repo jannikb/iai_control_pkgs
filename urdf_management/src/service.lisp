@@ -34,6 +34,8 @@
 
 (defun start-urdf-management ()
   (with-ros-node ("urdf_management/service" :spin t)
+    (setf *robot-model* (parse-urdf (get-param "robot_description" *default-description*)))
+    (setf *urdf-pub* (advertise "/dynamic_robot_description" 'std_msgs-msg:String :latch t))
     (alter-urdf-service)
     (urdf-alter-urdf-service)
     (simple-alter-urdf-service)
@@ -60,8 +62,6 @@
 
 (defun alter-urdf-service ()
   "Registers the service to alter the robot description."
-  (setf *robot-model* (parse-urdf (get-param "robot_description" *default-description*)))
-  (setf *urdf-pub* (advertise "/dynamic_robot_description" 'std_msgs-msg:String :latch t))
   (register-service *main-service-name* 'AlterUrdf)
   (ros-info (urdf-management) "Ready to alter urdf."))
 
@@ -70,14 +70,18 @@
     ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :add))
      (ros-info (urdf-management) "Adding urdf to robot description.")
      (with-recursive-lock (*robot-mutex*)
-       (let ((success (attach-robot! *robot-model* (parse-urdf (get-absolute-path urdf))
+       (let ((success (attach-robot! *robot-model*
+                                     (parse-urdf (get-absolute-path urdf))
                                      (xml->joint joint_description) prefix)))
          (when success
            (publish-urdf))
          (make-response :success success))))
     ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
-     (ros-warn (urdf-management) "not implemented yet")
-     (make-response :success nil))
+     (let ((success (detach-robot! *robot-model*
+                                   (parse-urdf (get-absolute-path urdf)) prefix)))
+       (when success
+           (publish-urdf))
+       (make-response :success success)))
     (t (ros-error (urdf-management simple-service) "Action ~a undefined." action)
        (make-response :success nil))))
 
