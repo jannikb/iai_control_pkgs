@@ -50,7 +50,9 @@
                            "l_gripper_tool_frame")))
 
 (defun move-spatula () 
-  (alter-urdf 1 "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 -0.20 0\" /></visual></link>" nil))
+  (alter-urdf 1 "<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 -0.2 0\" /><geometry><mesh filename=\"package://urdf_management_tutorial/meshes/kitchen/hand-tools/edeka_spatula1.dae\" /></geometry></visual></link>" nil))
+
+              ;;"<link name=\"spatula\"><visual><origin rpy=\"0 0 0 \" xyz=\"0 -0.20 0\" /></visual></link>" nil))
 
 (defun alter-urdf (action-id add remove)
   (with-ros-node ("urdf_management_tutorial")

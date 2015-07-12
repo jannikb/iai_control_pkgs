@@ -40,8 +40,13 @@
           (otherwise         
            (ros-warn (urdf-management)
                      "Ignoring element: ~a" child))))
-      (values (mapcar (lambda (link-desc) (xml-element->link link-desc)) link-descriptions)
-              (mapcar (lambda (joint-desc) (xml-element->joint joint-desc)) joint-descriptions)))))
+      (ros-info (asd) "Parsed ~a ~a" link-descriptions joint-descriptions)
+      (values (prog1
+                 (mapcar (lambda (link-desc) (xml-element->link link-desc)) link-descriptions)
+                 (ros-info (jkl) "asdasd"))
+              (progn
+                (ros-info (dfg) "asdasd")
+                (mapcar (lambda (joint-desc) (xml-element->joint joint-desc)) joint-descriptions))))))
 
 (defun xml->joint (xml-string)
   (let ((xml-struct (parse-xml-string xml-string)))
@@ -51,6 +56,7 @@
           (xml-element->joint first-child))))))
 
 (defun xml-element->link (xml-element)
+  (ros-info (mnbv) "~a" xml-element)
   (cl-urdf::parse-xml-node :|link| xml-element))
 
 (defun xml-element->joint (xml-element)

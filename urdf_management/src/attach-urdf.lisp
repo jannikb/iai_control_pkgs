@@ -114,7 +114,11 @@
   
 (defun attach-robot! (base-robot robot-to-attach joint &optional prefix)
   "Attaches the `robot-to-attach' to the `base-robot'. The `joint' is used to connect those to robots and if necessary the child of the joint will be made the root link of `robot-to-attach'. Optionally the `prefix' will be added to all the joints and links of the `robot-to-attach'."
-  (flet ((add-link-helper (key link)
+  (flet ((find-duplicates (table1 table2)
+           (position nil (mapcar (lambda (value)
+                                    (nth-value 1 (gethash (name value) table2)))
+                                  table1)))
+         (add-link-helper (key link)
            (declare (ignore key))
            (setf (gethash (name link)
                           (links base-robot)) link))
@@ -128,7 +132,12 @@
       (setf (child-name joint)
             (add-prefix (child-name joint) prefix)))
     ;; Make the link that gets connected to the robot root
-    (when (make-link-root robot-to-attach (subseq (child-name joint) (length prefix)))
+    (when (and (not (find-duplicates (alexandria:hash-table-values (links robot-to-attach))
+                                     (links base-robot)))
+               (not (find-duplicates (alexandria:hash-table-values (joints robot-to-attach))
+                                     (joints base-robot)))
+               (make-link-root robot-to-attach
+                               (subseq (child-name joint) (length prefix))))               
       ;; Add the links and joints to the robot
       (maphash #'add-joint-helper (joints robot-to-attach))
       (maphash #'add-link-helper (links robot-to-attach))

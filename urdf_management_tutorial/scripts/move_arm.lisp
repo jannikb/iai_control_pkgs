@@ -4,4 +4,4 @@
 
 (ros-load:load-system "urdf_management-tutorial" "urdf-management-tutorial")
 
-(urdf-management-tutorial:move-arm)
+(urdf-management-tutorial:move-to-grasp-position)
