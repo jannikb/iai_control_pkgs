@@ -28,14 +28,13 @@
 
 (in-package :urdf-management)
 
-(defgeneric add-link! (robot link joint)
-  (:documentation "ad"))
-
-(defmethod add-link! ((robot robot) (link link) (joint joint))
-  (when (and (equal (child-name joint) (name link))
-               (not (gethash (name joint) (joints robot)))
-               (not (gethash (name link) (links robot)))
-               (gethash (parent-name joint) (links robot)))
+(defun add-link! (robot link joint)
+  "Uses the `joint' to connect the `link' to the `robot'. Modifies and returns `robot'."
+  (when (and robot link joint
+             (equal (child-name joint) (name link))
+             (not (gethash (name joint) (joints robot)))
+             (not (gethash (name link) (links robot)))
+             (gethash (parent-name joint) (links robot)))
     ;; Add link and joint
     (setf (gethash (name link) (links robot)) link)
     (setf (gethash (name joint) (joints robot)) joint)
@@ -48,9 +47,11 @@
     robot))
 
 (defun add-link (robot link joint)
+  "Uses the `joint' to connect the `link' to the `robot'. Doesn't modify `robot' and instead returns a new object of type robot."
   (add-link! (copy-object robot) (copy-object link) (copy-object joint)))
 
 (defun add-links! (robot links joints)
+  "Uses the `joints' to connect the `links' to the `robot'. Modifies and returns `robot'. Returns nil if it fails but might have added some of the `links'."
   (let ((joint-backlog nil)
         (prev-backlog-length (1+ (length joints))))
     (loop while (and joints
@@ -76,6 +77,7 @@
     robot))
 
 (defun add-links (robot links joints)
+  "Uses the `joints' to connect the `links' to the `robot'. Doesn't modifiy `robot' instead a new object of type robot is returned or nil if it failed."
   (add-links! (copy-object robot)
               (copy-object links)
               (copy-object joints)))

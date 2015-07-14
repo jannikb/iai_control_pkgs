@@ -29,14 +29,12 @@
 (in-package :urdf-management)
 
 (defgeneric remove-link! (robot link)
-  (:documentation ""))
+  (:documentation "Removes the `link' from the `robot'. Returns the modified `robot'."))
 
 (defmethod remove-link! ((robot robot) (link-name string))
   (let ((link (gethash link-name (links robot))))
     (when link
-      (format t "Removing ~a~%" (name link))
       (flet ((remove-child (joint)
-               (format t "Plan to remove ~a~%" (name (child joint)))
                (remove-link! robot (child joint))))
         (mapcar #'remove-child (to-joints link))
         (remhash (name (from-joint link)) (joints robot))
@@ -49,12 +47,15 @@
   (remove-link! robot (name link)))
 
 (defun remove-link (robot link)
+  "Removes the `link' from the `robot'. Doesn't modify `robot' instead returns a new object of type robot."
   (remove-link! (copy-object robot) link))
 
 (defun remove-links! (robot links)
+  "Removes the `links' from the `robot'. Returns the modified `robot'."
   (dolist (link links)
     (remove-link! robot link))
   t)
 
 (defun remove-links (robot links)
+  "Removes the `links' from the `robot'. Doesn't modify `robot' instead returns a new object of type robot."
   (remove-links! (copy-object robot) links))

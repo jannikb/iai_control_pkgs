@@ -34,24 +34,6 @@
 (defgeneric make-link-root (robot-model link)
   (:documentation "Makes the `link' the new root link of the `robot'."))
 
-(defun read-urdf-xml (urdf-path)
-  "Gets a path to an urdf that can either be an absolute path or a ros path
- and returns a xml-struct of it."
-  (s-xml:parse-xml-file (get-absolute-path urdf-path) :output-type :xml-struct))
-
-(defun get-absolute-path (path)
-  (if (eql (first (pathname-directory path)) :absolute)
-      path
-      (ros-path->absolute-path path)))
-  
-(defun ros-path->absolute-path (ros-path)
-  "Converts a ros-path of the form '<ros-pkg-name>/rest/of/the.path' to an absolute path."
-  (let* ((pkg-name (second (pathname-directory ros-path)))
-         (absolute-pkg-path (ros-load-manifest:ros-package-path pkg-name))
-         (path-from-pkg (subseq (namestring ros-path) 
-                                (1+ (length pkg-name)))))
-    (pathname (format nil "~a~a" (namestring absolute-pkg-path) path-from-pkg))))
-
 (defmethod add-prefix ((robot-model robot) prefix)
   (flet ((add-prefix-helper (key value)
            (declare (ignore key))
@@ -113,7 +95,7 @@
   link)
   
 (defun attach-robot! (base-robot robot-to-attach joint &optional prefix)
-  "Attaches the `robot-to-attach' to the `base-robot'. The `joint' is used to connect those to robots and if necessary the child of the joint will be made the root link of `robot-to-attach'. Optionally the `prefix' will be added to all the joints and links of the `robot-to-attach'."
+  "Attaches the `robot-to-attach' to the `base-robot'. The `joint' is used to connect those to robots and if necessary the child of the joint will be made the root link of `robot-to-attach'. Optionally the `prefix' will be added to all the joints and links of the `robot-to-attach'. Returns and modifies `base-robot'."
   (flet ((find-duplicates (table1 table2)
            (position nil (mapcar (lambda (value)
                                     (nth-value 1 (gethash (name value) table2)))
@@ -154,10 +136,12 @@
       base-robot)))
 
 (defun attach-robot (base-robot robot-to-attach joint &optional prefix)
+  "Attaches the `robot-to-attach' to the `base-robot' but doesn't modify `base-robot'."
   (attach-robot! (copy-object base-robot) robot-to-attach joint prefix))
 
 
 (defun detach-robot! (base-robot robot-to-detach &optional prefix)
+  "Removes all links and joints that are part of `robot-to-detach' from `base-robot'. Optionally a `prefix' will be applied to all links and joints of `robot-tp-detach'. Returns and modifies `base-robot'."
   (flet ((remove-link-helper (key link)
            (declare (ignore key))
            (remove-link! base-robot (name link))))
@@ -167,4 +151,23 @@
     base-robot))
 
 (defun detach-robot (base-robot robot-to-detach &optional prefix)
+  "Removes all links and joints that are part of `robot-to-detach' from `base-robot'. Optionally a `prefix' will be applied to all links and joints of `robot-tp-detach'. Returns a modified copy of `base-robot'."
   (detach-robot! (copy-object base-robot) robot-to-detach prefix))
+
+(defun read-urdf-xml (urdf-path)
+  "Gets a path to an urdf that can either be an absolute path or a ros path
+ and returns a xml-struct of it."
+  (s-xml:parse-xml-file (get-absolute-path urdf-path) :output-type :xml-struct))
+
+(defun get-absolute-path (path)
+  (if (eql (first (pathname-directory path)) :absolute)
+      path
+      (ros-path->absolute-path path)))
+  
+(defun ros-path->absolute-path (ros-path)
+  "Converts a ros-path of the form '<ros-pkg-name>/rest/of/the.path' to an absolute path."
+  (let* ((pkg-name (second (pathname-directory ros-path)))
+         (absolute-pkg-path (ros-load-manifest:ros-package-path pkg-name))
+         (path-from-pkg (subseq (namestring ros-path) 
+                                (1+ (length pkg-name)))))
+    (pathname (format nil "~a~a" (namestring absolute-pkg-path) path-from-pkg))))

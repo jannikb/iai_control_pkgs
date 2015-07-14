@@ -29,6 +29,7 @@
 (in-package :urdf-management)
 
 (defun xml->links-joints (xml-string)
+  "Parses a string that contains a xml description of links and joints and returns the two values a list of links and a list of joints."
   (let ((parsed-xml (parse-xml-string xml-string))
         (link-descriptions nil)
         (joint-descriptions nil))
@@ -40,15 +41,11 @@
           (otherwise         
            (ros-warn (urdf-management)
                      "Ignoring element: ~a" child))))
-      (ros-info (asd) "Parsed ~a ~a" link-descriptions joint-descriptions)
-      (values (prog1
-                 (mapcar (lambda (link-desc) (xml-element->link link-desc)) link-descriptions)
-                 (ros-info (jkl) "asdasd"))
-              (progn
-                (ros-info (dfg) "asdasd")
-                (mapcar (lambda (joint-desc) (xml-element->joint joint-desc)) joint-descriptions))))))
+      (values (mapcar (lambda (link-desc) (xml-element->link link-desc)) link-descriptions)
+              (mapcar (lambda (joint-desc) (xml-element->joint joint-desc)) joint-descriptions)))))
 
 (defun xml->joint (xml-string)
+  "Parses a string with a xml description of a joint and returns the joint."
   (let ((xml-struct (parse-xml-string xml-string)))
     (when xml-struct
       (let ((first-child  (s-xml:first-xml-element-child xml-struct)))
@@ -56,10 +53,11 @@
           (xml-element->joint first-child))))))
 
 (defun xml-element->link (xml-element)
-  (ros-info (mnbv) "~a" xml-element)
+  "Gets a s-xml:xml-element that contains a link description and returns the link."
   (cl-urdf::parse-xml-node :|link| xml-element))
 
 (defun xml-element->joint (xml-element)
+  "Gets a s-xml:xml-element that contains a joint description and returns the joint."
   (cl-urdf::parse-xml-node :|joint| xml-element))
 
 (defun parse-xml-string (xml)
