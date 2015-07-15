@@ -55,7 +55,6 @@
      (multiple-value-bind (links joints) (xml->links-joints add)
        (ros-info (urdf-management) "Adding to robot model")
        (with-recursive-lock (*robot-mutex*)
-         (format t "In mutex ~%")
          (add-links! *robot-model* links joints))))
     ((eql action (symbol-code 'iai_urdf_msgs-srv:alterurdf-request :remove))
      (ros-info (urdf-management) "Removing from robot model")
